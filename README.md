@@ -1,56 +1,79 @@
-# Welcome to your Expo app 👋
+# PackNGo — group travel companion
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Plan and run group trips together: a shared map of points of interest, live
+opt-in location sharing, Splitwise-style expense splitting with UPI settle-up
+links, activity voting, offline support, and an SOS/emergency feature.
 
-## Get started
+Backed by **Appwrite Cloud**. Web is **Next.js**, mobile is **Expo / React
+Native**, and cross-platform logic lives in a shared package.
 
-1. Install dependencies
+## Monorepo layout
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+sync/
+├── apps/
+│   ├── web/        @sync/web       — Next.js (App Router, Tailwind v4)
+│   └── mobile/     @sync/mobile    — Expo (expo-router, React Native)
+├── functions/
+│   └── notify/     @sync/fn-notify — Appwrite Function: push notifications
+└── packages/
+    └── shared/     @sync/shared    — types, Appwrite config/ids, pure logic
+                                      (balances, UPI, SOS, notification copy)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Tooling: **pnpm workspaces** + **Turborepo**. `@sync/shared` ships raw
+TypeScript that each app transpiles (Next via `transpilePackages`, Expo via
+Metro), so there's no build step for shared code.
 
-### Other setup steps
+## Getting started
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+pnpm install
+```
 
-## Learn more
+Then copy the env examples and fill in your Appwrite values (see [SETUP.md](./SETUP.md)):
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+cp apps/web/.env.local.example apps/web/.env.local
+cp apps/mobile/.env.example apps/mobile/.env
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Run everything, or one app:
 
-## Join the community
+```bash
+pnpm dev            # web + mobile in parallel (Turborepo)
+pnpm dev:web        # Next.js only  → http://localhost:3000
+pnpm dev:mobile     # Expo only     → scan the QR with Expo Go
+```
 
-Join our community of developers creating universal apps.
+## Scripts (root)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+| Command           | What it does                                  |
+| ----------------- | --------------------------------------------- |
+| `pnpm dev`        | Run all apps in dev (parallel)                |
+| `pnpm build`      | Build all apps                                |
+| `pnpm lint`       | Lint all workspaces                           |
+| `pnpm typecheck`  | Type-check all workspaces                     |
+| `pnpm --filter @sync/shared test` | Run shared-logic unit tests   |
+
+## Status
+
+**Phases 0 and 1 are built**, and the Appwrite backend is **live** — all 12
+collections, their indexes, and 4 storage buckets are provisioned (re-runnable
+via `pnpm setup:appwrite`).
+
+Remaining before you can sign in and receive pushes end-to-end: enable **Google
+OAuth** in the Appwrite console, and complete the **Firebase/FCM** steps — both
+in [SETUP.md](./SETUP.md).
+
+## Roadmap
+
+0. ✅ **Scaffold** — monorepo, apps, shared package, Appwrite client wiring.
+1. ✅ **Auth + Trips** — Google OAuth, profile sync, trips backed by Appwrite Teams.
+   ✅ **Push notifications** — FCM via Appwrite Messaging, dispatched by `functions/notify`.
+2. ✅ **Map + POIs** — MapLibre + OpenFreeMap tiles (free, no key) on both platforms, realtime POI updates.
+3. **Expenses + UPI** — expense splitting, balances, UPI settle-up links.
+4. **Voting** — polls with realtime vote counts.
+5. **Live location** — foreground opt-in sharing on the map.
+6. **Offline sync (mobile)** — SQLite cache + mutation outbox.
+7. **SOS** — emergency dial + realtime group alert.

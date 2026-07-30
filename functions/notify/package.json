@@ -1,0 +1,21 @@
+{
+  "name": "@sync/fn-notify",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --platform=node --target=node18 --format=esm --external:node-appwrite --outfile=main.js",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf main.js .turbo"
+  },
+  "dependencies": {
+    "node-appwrite": "^27.1.0"
+  },
+  "devDependencies": {
+    "@sync/shared": "workspace:*",
+    "@types/node": "^20.19.43",
+    "esbuild": "^0.24.2",
+    "typescript": "^5.7.3"
+  }
+}

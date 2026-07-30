@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "346410475864",
+    "project_id": "packngo-157ac",
+    "storage_bucket": "packngo-157ac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:346410475864:android:4f1fc2169d66d6a972052d",
+        "android_client_info": {
+          "package_name": "com.packngo.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-8TvZxhnobFMwpkn6R05yEpf9PSK0rOQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

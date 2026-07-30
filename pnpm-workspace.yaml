@@ -1,0 +1,51 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "functions/*"
+
+# A native module may only appear once in a native build. Transitive deps pull
+# in older copies of these Expo modules, so pin every instance to the version
+# Expo SDK 57 ships (see `expo-doctor`'s duplicate-dependency check).
+#
+# NOTE: react-native-appwrite declares expo-file-system 18.x and calls its
+# legacy API (cacheDirectory / readAsStringAsync / writeAsStringAsync). In 57.x
+# those moved to "expo-file-system/legacy" and the root re-exports THROW at
+# runtime — so apps/mobile/metro.config.js aliases that one package's import to
+# the legacy entry. Same native module, compatible JS API.
+overrides:
+  expo-file-system: 57.0.1
+  expo-constants: 57.0.8
+
+allowBuilds:
+  esbuild: true
+  sharp: false
+  unrs-resolver: false
+
+# Dependencies allowed to run install/build scripts (pnpm blocks these by default).
+onlyBuiltDependencies:
+  - esbuild
+
+# Native deps we intentionally do NOT build (Next.js defaults; sharp is optional in dev).
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
+
+minimumReleaseAgeExclude:
+  - '@expo/cli@57.0.11'
+  - '@expo/inline-modules@0.1.4'
+  - '@expo/local-build-cache-provider@57.0.5'
+  - '@expo/log-box@57.0.2'
+  - '@expo/metro-runtime@57.0.8'
+  - '@expo/prebuild-config@57.0.10'
+  - '@expo/ui@57.0.8'
+  - babel-preset-expo@57.0.5
+  - expo-asset@57.0.8
+  - expo-constants@57.0.8
+  - expo-modules-core@57.0.8
+  - expo-router@57.0.9
+  - expo-system-ui@57.0.2
+  - expo@57.0.9
+  - expo-dev-client@57.0.10
+  - expo-dev-launcher@57.0.10
+  - expo-dev-menu@57.0.10
+  - expo-notifications@57.0.8

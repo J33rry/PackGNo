@@ -1,0 +1,2 @@
+# Build artifact — regenerate with `pnpm --filter @sync/fn-notify build` before deploying.
+main.js

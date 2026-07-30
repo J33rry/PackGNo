@@ -3,22 +3,11 @@
 # dependencies
 node_modules/
 
-# Turborepo
-.turbo/
-
-# Next.js
-.next/
-next-env.d.ts
-
 # Expo
 .expo/
 dist/
 web-build/
 expo-env.d.ts
-
-# build output
-build/
-out/
 
 # Native
 .kotlin/
@@ -41,15 +30,14 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# env files — keep *.example committed, ignore everything else
-.env
-.env.*
-!.env.example
-!.env.*.example
+# local env files
+.env*.local
 
 # typescript
 *.tsbuildinfo
 
+example
+
 # generated native folders
-apps/mobile/ios
-apps/mobile/android
+/ios
+/android
