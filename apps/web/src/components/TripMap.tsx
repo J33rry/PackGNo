@@ -1,57 +1,38 @@
 'use client';
 
 /**
- * MapLibre GL JS map for a trip.
+ * Google Maps implementation for the web trip map.
  *
- * Uses OpenFreeMap vector tiles (free, no API key). Markers are managed
- * imperatively — MapLibre owns the DOM inside the container, so we sync
- * markers in an effect rather than rendering them as React children.
+ * Uses AdvancedMarkerElement (replaces the deprecated google.maps.Marker).
+ *
+ * Cost control notes:
+ * - Map loads are billed, so the app should keep this screen purposeful.
+ * - Search requests are handled separately with debouncing + session tokens.
+ * - Reverse geocode is only used after a deliberate tap/click action.
  */
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-// Pinned to maplibre-gl v5 on purpose: v6.0.0 does not work under Next 16's
-// Turbopack — the style never finishes loading (`isStyleLoaded()` stays false,
-// no `load` event, no tiles) and it fails *silently*, rendering a blank map.
-// Re-test before bumping to v6. `MapLibreMap` is the alias for `Map`, which
-// avoids clashing with the built-in Map used for the marker registry below.
-import {
-  LngLatBounds,
-  MapLibreMap,
-  Marker,
-  NavigationControl,
-  Popup,
-} from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
-import {
-  DEFAULT_MAP_CAMERA,
-  DEFAULT_MAP_STYLE_URL,
-  type PoiDoc,
-  type VisitDoc,
-} from '@sync/shared';
-import type { ViewBox } from '@/lib/places';
+import { DEFAULT_MAP_CAMERA, type PoiDoc, type VisitDoc } from '@sync/shared';
+import { getPlaceById, type ViewBox } from '@/lib/places';
+import { hasGoogleMapsKey, importGoogleMapsLibrary, loadGoogleMaps } from '@/lib/google-maps';
 
-const STYLE_URL = process.env.NEXT_PUBLIC_MAP_STYLE_URL || DEFAULT_MAP_STYLE_URL;
-
-/** Marker colour per POI category, so the map reads at a glance. */
 const CATEGORY_COLOR: Record<string, string> = {
-  food: '#e8710a',
-  sight: '#1a73e8',
-  lodging: '#9334e6',
-  activity: '#0f9d58',
-  transport: '#5f6368',
-  other: '#d93025',
+  food: '#ff7b54',
+  sight: '#0d8abc',
+  lodging: '#5440ff',
+  activity: '#1c9b6f',
+  transport: '#4d6578',
+  other: '#ff4f6a',
 };
 
-/** A labeled place tapped straight off the vector tiles (a hotel, café, …). */
 export interface TappedPlace {
   name: string;
-  /** Raw OSM descriptor from the tile (e.g. `hotel`), for category mapping. */
   rawType: string | null;
   lat: number;
   lng: number;
+  placeId?: string | null;
 }
 
-/** Imperative controls the parent can call to drive the map. */
 export interface TripMapHandle {
   flyTo: (lat: number, lng: number, zoom?: number) => void;
   getViewBox: () => ViewBox | undefined;
@@ -70,20 +51,35 @@ interface TripMapProps {
   className?: string;
 }
 
-/** OpenMapTiles POI source-layer name — where labeled places live in the tiles. */
-const POI_SOURCE_LAYER = 'poi';
+/** Create a circle-shaped DOM element used as AdvancedMarkerElement content. */
+function createCirclePin(opts: {
+  fillColor: string;
+  fillOpacity: number;
+  radius: number;
+  strokeColor: string;
+  strokeWidth: number;
+}): HTMLElement {
+  const size = (opts.radius + opts.strokeWidth) * 2;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', String(size));
+  svg.setAttribute('height', String(size));
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  svg.style.display = 'block';
 
-/** Build the small dot element used for a visit marker. */
-function visitMarkerElement(): HTMLDivElement {
-  const el = document.createElement('div');
-  el.style.width = '14px';
-  el.style.height = '14px';
-  el.style.borderRadius = '9999px';
-  el.style.background = '#0d9488';
-  el.style.border = '2px solid white';
-  el.style.boxShadow = '0 1px 4px rgba(0,0,0,0.4)';
-  el.style.cursor = 'pointer';
-  return el;
+  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circle.setAttribute('cx', String(size / 2));
+  circle.setAttribute('cy', String(size / 2));
+  circle.setAttribute('r', String(opts.radius));
+  circle.setAttribute('fill', opts.fillColor);
+  circle.setAttribute('fill-opacity', String(opts.fillOpacity));
+  circle.setAttribute('stroke', opts.strokeColor);
+  circle.setAttribute('stroke-width', String(opts.strokeWidth));
+  svg.appendChild(circle);
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cursor = 'pointer';
+  wrapper.appendChild(svg);
+  return wrapper;
 }
 
 export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
@@ -91,15 +87,15 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<MapLibreMap | null>(null);
-  const markersRef = useRef<Map<string, Marker>>(new Map());
-  const visitMarkersRef = useRef<Map<string, Marker>>(new Map());
+  const mapRef = useRef<any | null>(null);
+  const markersRef = useRef<Map<string, any>>(new Map());
+  const visitMarkersRef = useRef<Map<string, any>>(new Map());
   const hasFitRef = useRef(false);
-  // Bumped when the map instance is created, so the marker effect re-runs.
+  const infoWindowRef = useRef<any | null>(null);
+  const markerClassRef = useRef<any>(null);
   const [mapReady, setMapReady] = useState(0);
+  const [mapError, setMapError] = useState<string | null>(null);
 
-  // Keep the latest callbacks without re-creating the map. Assigned in an
-  // effect (not during render) so this stays React-strict-mode clean.
   const clickRef = useRef(onMapClick);
   const placeTapRef = useRef(onPlaceTap);
   const poiClickRef = useRef(onPoiClick);
@@ -109,97 +105,116 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
     poiClickRef.current = onPoiClick;
   });
 
-  // Expose fly-to + viewport reads to the parent (search results, biasing).
   useImperativeHandle(ref, () => ({
     flyTo(lat, lng, zoom = 15) {
-      mapRef.current?.flyTo({ center: [lng, lat], zoom, duration: 800 });
+      mapRef.current?.panTo({ lat, lng });
+      if (zoom) mapRef.current?.setZoom(zoom);
     },
     getViewBox() {
       const b = mapRef.current?.getBounds();
       if (!b) return undefined;
-      return { west: b.getWest(), south: b.getSouth(), east: b.getEast(), north: b.getNorth() };
+      const { south, west, north, east } = b.toJSON();
+      return { west, south, east, north };
     },
   }), []);
 
-  // Create the map once the container actually has a size.
-  //
-  // MapLibre measures its container exactly once, at construction. In a flex or
-  // grid parent the box is frequently still 0×0 on first paint, and a map built
-  // at that size never finishes loading its style — it just renders an empty
-  // background. So we wait for a real size, then build, and keep the observer
-  // around to track later resizes.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Capture the stable marker registries for the cleanup closure.
     const markers = markersRef.current;
     const visitMarkers = visitMarkersRef.current;
+    let cancelled = false;
 
-    const build = () => {
-      if (mapRef.current) {
-        mapRef.current.resize();
-        return;
-      }
+    let building = false;
+    const build = async () => {
+      if (mapRef.current || building) return;
       const { width, height } = container.getBoundingClientRect();
-      if (width === 0 || height === 0) return; // not laid out yet
+      if (width === 0 || height === 0) return;
 
-      const map = new MapLibreMap({
-        container,
-        style: STYLE_URL,
-        center: [DEFAULT_MAP_CAMERA.longitude, DEFAULT_MAP_CAMERA.latitude],
-        zoom: DEFAULT_MAP_CAMERA.zoom,
-      });
-      map.addControl(new NavigationControl(), 'top-right');
-      map.on('click', (e) => {
-        // Prefer a labeled place under the cursor (a hotel, restaurant, …) so
-        // tapping one shows its info; fall back to a raw-coordinate click.
-        const hits = map
-          .queryRenderedFeatures(e.point)
-          .filter((f) => f.sourceLayer === POI_SOURCE_LAYER && f.properties?.name);
-        const place = hits[0];
-        if (place && placeTapRef.current) {
-          const props = place.properties ?? {};
-          placeTapRef.current({
-            name: String(props.name),
-            rawType: props.subclass
-              ? String(props.subclass)
-              : props.class
-                ? String(props.class)
-                : null,
-            lat: e.lngLat.lat,
-            lng: e.lngLat.lng,
-          });
-          return;
+      building = true;
+      try {
+        const runtime = await loadGoogleMaps();
+        const maps = runtime.maps;
+        // Load both libraries in parallel.
+        const [, markerLib] = await Promise.all([
+          importGoogleMapsLibrary('maps'),
+          importGoogleMapsLibrary('marker'),
+        ]);
+        if (cancelled) return;
+
+        // Store the AdvancedMarkerElement class for use in marker effects.
+        markerClassRef.current = (markerLib as any).AdvancedMarkerElement;
+
+        const map = new maps.Map(container, {
+          center: { lat: DEFAULT_MAP_CAMERA.latitude, lng: DEFAULT_MAP_CAMERA.longitude },
+          zoom: DEFAULT_MAP_CAMERA.zoom,
+          disableDefaultUI: true,
+          zoomControl: true,
+          clickableIcons: true,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          gestureHandling: 'greedy',
+          mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID',
+        });
+
+        infoWindowRef.current = new maps.InfoWindow();
+
+        map.addListener('click', async (event: any) => {
+          const latLng = event.latLng;
+          if (!latLng) return;
+
+          if (event.placeId && placeTapRef.current) {
+            event.stop();
+            const place = await getPlaceById(event.placeId).catch(() => null);
+            if (place) {
+              placeTapRef.current(place);
+              return;
+            }
+          }
+
+          clickRef.current?.({ lat: latLng.lat(), lng: latLng.lng() });
+        });
+        mapRef.current = map;
+        observer.disconnect(); // No longer needed once map is created.
+        setMapError(null);
+        setMapReady((n) => n + 1);
+      } catch (error) {
+        building = false;
+        if (!cancelled) {
+          setMapError(error instanceof Error ? error.message : 'Failed to load Google Maps.');
         }
-        clickRef.current?.({ lat: e.lngLat.lat, lng: e.lngLat.lng });
-      });
-      // Tile/style failures are otherwise silent — the map just renders empty.
-      map.on('error', (ev) => console.warn('[map]', ev.error?.message ?? ev));
-      mapRef.current = map;
-      // Markers/camera are applied by the effect below once the map exists.
-      setMapReady((n) => n + 1);
+      }
     };
 
-    build();
+    if (!hasGoogleMapsKey()) {
+      setMapError('Google Maps is not configured. Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.');
+      return;
+    }
+
+    void build();
     const observer = new ResizeObserver(build);
     observer.observe(container);
 
     return () => {
+      cancelled = true;
       observer.disconnect();
-      markers.forEach((m) => m.remove());
+      markers.forEach((m) => (m.map = null));
       markers.clear();
-      visitMarkers.forEach((m) => m.remove());
+      visitMarkers.forEach((m) => (m.map = null));
       visitMarkers.clear();
-      mapRef.current?.remove();
+      infoWindowRef.current?.close();
+      infoWindowRef.current = null;
       mapRef.current = null;
     };
   }, []);
 
-  // Sync POI markers whenever the POI list changes.
+  // ── POI markers ──────────────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    const AME = markerClassRef.current;
+    if (!map || !AME) return;
 
     const markers = markersRef.current;
     const seen = new Set<string>();
@@ -208,49 +223,58 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
       seen.add(poi.$id);
       const existing = markers.get(poi.$id);
       if (existing) {
-        existing.setLngLat([poi.lng, poi.lat]);
-        existing.getElement().style.opacity = poi.visitStatus === 'visited' ? '0.5' : '1';
+        existing.position = { lat: poi.lat, lng: poi.lng };
+        const el = existing.content as HTMLElement | null;
+        if (el instanceof HTMLElement) el.style.opacity = poi.visitStatus === 'visited' ? '0.48' : '1';
         continue;
       }
-      const marker = new Marker({
-        color: CATEGORY_COLOR[poi.category] ?? CATEGORY_COLOR.other,
-      })
-        .setLngLat([poi.lng, poi.lat])
-        .setPopup(new Popup({ offset: 24 }).setText(poi.name))
-        .addTo(map);
 
-      // Visited places are dimmed so the remaining plan stands out.
-      if (poi.visitStatus === 'visited') marker.getElement().style.opacity = '0.5';
+      const content = createCirclePin({
+        fillColor: CATEGORY_COLOR[poi.category] ?? CATEGORY_COLOR.other,
+        fillOpacity: poi.visitStatus === 'visited' ? 0.42 : 1,
+        radius: 9,
+        strokeColor: '#f7f3ea',
+        strokeWidth: 3,
+      });
 
-      marker.getElement().addEventListener('click', (e) => {
-        e.stopPropagation();
+      const marker = new AME({
+        map,
+        position: { lat: poi.lat, lng: poi.lng },
+        title: poi.name,
+        content,
+      });
+      marker.addEventListener('gmp-click', () => {
+        infoWindowRef.current?.setContent(
+          `<div style="font:600 13px sans-serif;color:#17324d;">${escapeHtml(poi.name)}</div>`,
+        );
+        infoWindowRef.current?.open({ anchor: marker, map });
         poiClickRef.current?.(poi);
       });
       markers.set(poi.$id, marker);
     }
 
-    // Drop markers for POIs that no longer exist.
     for (const [id, marker] of markers) {
       if (!seen.has(id)) {
-        marker.remove();
+        marker.map = null;
         markers.delete(id);
       }
     }
 
-    // Frame all POIs the first time we get any, then leave the camera alone
-    // so the map doesn't yank around while the user is panning.
     if (!hasFitRef.current && pois.length > 0) {
       hasFitRef.current = true;
-      const bounds = new LngLatBounds();
-      pois.forEach((p) => bounds.extend([p.lng, p.lat]));
-      map.fitBounds(bounds, { padding: 64, maxZoom: 14, duration: 0 });
+      const maps = window.google?.maps;
+      if (!maps) return;
+      const bounds = new maps.LatLngBounds();
+      pois.forEach((p) => bounds.extend({ lat: p.lat, lng: p.lng }));
+      map.fitBounds(bounds, 80);
     }
   }, [pois, mapReady]);
 
-  // Sync visit-check-in markers (a distinct teal dot) whenever they change.
+  // ── Visit markers ────────────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    const AME = markerClassRef.current;
+    if (!map || !AME) return;
 
     const markers = visitMarkersRef.current;
     const seen = new Set<string>();
@@ -260,24 +284,58 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
       const existing = markers.get(visit.$id);
       const label = visit.placeName || 'Visited spot';
       if (existing) {
-        existing.setLngLat([visit.lng, visit.lat]);
-        existing.getPopup()?.setText(label);
+        existing.position = { lat: visit.lat, lng: visit.lng };
         continue;
       }
-      const marker = new Marker({ element: visitMarkerElement() })
-        .setLngLat([visit.lng, visit.lat])
-        .setPopup(new Popup({ offset: 16 }).setText(label))
-        .addTo(map);
+
+      const content = createCirclePin({
+        fillColor: '#17324d',
+        fillOpacity: 1,
+        radius: 7,
+        strokeColor: '#f7f3ea',
+        strokeWidth: 3,
+      });
+
+      const marker = new AME({
+        map,
+        position: { lat: visit.lat, lng: visit.lng },
+        title: label,
+        content,
+      });
+      marker.addEventListener('gmp-click', () => {
+        infoWindowRef.current?.setContent(
+          `<div style="font:600 13px sans-serif;color:#17324d;">${escapeHtml(label)}</div>`,
+        );
+        infoWindowRef.current?.open({ anchor: marker, map });
+      });
       markers.set(visit.$id, marker);
     }
 
     for (const [id, marker] of markers) {
       if (!seen.has(id)) {
-        marker.remove();
+        marker.map = null;
         markers.delete(id);
       }
     }
   }, [visits, mapReady]);
 
-  return <div ref={containerRef} className={className} />;
+  return (
+    <div className={className}>
+      <div ref={containerRef} className="h-full w-full" />
+      {mapError && (
+        <div className="absolute inset-x-4 top-4 rounded-2xl border border-[color:var(--danger)]/20 bg-[color:var(--paper)] px-4 py-3 text-sm text-[color:var(--danger)] shadow-[0_12px_30px_rgba(19,33,44,0.14)]">
+          {mapError}
+        </div>
+      )}
+    </div>
+  );
 });
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}

@@ -22,27 +22,44 @@ export default function TripsLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex min-h-full flex-col">
-      <header className="flex items-center justify-between border-b border-black/10 px-6 py-4 dark:border-white/10">
-        <span className="font-semibold">PackNGo</span>
-        <div className="flex items-center gap-3 text-sm">
-          <span className="text-foreground/60">{user.name || user.email}</span>
-          <button
-            onClick={() => signOut().then(() => router.replace('/login'))}
-            className="rounded-md border border-black/10 px-3 py-1.5 transition-colors hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5"
-          >
-            Sign out
-          </button>
-        </div>
-      </header>
-      {children}
+    <div className="min-h-screen px-4 py-4 sm:px-6">
+      <div className="shell flex min-h-[calc(100vh-2rem)] flex-col">
+        <header className="glass flex items-center justify-between rounded-[1.8rem] px-5 py-4 sm:px-6">
+          <div>
+            <div className="eyebrow">PackNGo</div>
+            <div className="mt-1 text-sm text-[color:var(--muted)]">Trip operations for your group.</div>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <span className="hidden text-[color:var(--muted)] sm:block">{user.name || user.email}</span>
+            <span className="rounded-full border border-[color:var(--line)] bg-[color:var(--panel-strong)] px-3 py-1.5 text-[color:var(--ink)] sm:hidden">
+              {initials(user.name || user.email || 'U')}
+            </span>
+            <button
+              onClick={() => signOut().then(() => router.replace('/login'))}
+              className="rounded-full border border-[color:var(--line-strong)] px-4 py-2 text-[color:var(--ink)] hover:bg-white"
+            >
+              Sign out
+            </button>
+          </div>
+        </header>
+        <div className="mt-4 flex flex-1 flex-col">{children}</div>
+      </div>
     </div>
   );
 }
 
+function initials(value: string): string {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
 function CenteredMessage({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-1 items-center justify-center text-sm text-foreground/60">
+    <div className="flex min-h-screen items-center justify-center text-sm text-[color:var(--muted)]">
       {children}
     </div>
   );

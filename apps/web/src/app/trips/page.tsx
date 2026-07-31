@@ -41,44 +41,65 @@ export default function TripsPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
-      <h1 className="text-2xl font-bold tracking-tight">Your trips</h1>
-      <p className="mt-1 text-sm text-foreground/60">
-        Create a trip, then invite your group and start planning.
-      </p>
-
-      <NewTripForm onCreate={handleCreate} creating={creating} />
+    <main className="flex flex-1 flex-col gap-4">
+      <section className="glass rounded-[2rem] px-6 py-7 sm:px-8">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
+          <div>
+            <div className="eyebrow">Your trips</div>
+            <h1 className="display mt-4 text-[clamp(2.8rem,6vw,4.8rem)] leading-[0.95] text-[color:var(--ink)]">
+              Build the next trip board.
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-8 text-[color:var(--muted)]">
+              Start a trip, save the places worth remembering, and let expenses, check-ins, and
+              notes organize themselves around the map.
+            </p>
+          </div>
+          <NewTripForm onCreate={handleCreate} creating={creating} />
+        </div>
+      </section>
 
       <UpiIdCard />
 
       {error && (
-        <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+        <p className="rounded-[1.4rem] border border-[color:var(--danger)]/20 bg-[color:var(--paper)] px-4 py-3 text-sm text-[color:var(--danger)]">
           {error}
         </p>
       )}
 
-      <section className="mt-8">
+      <section className="glass rounded-[2rem] px-6 py-6 sm:px-8">
+        <div className="mb-5 flex items-end justify-between gap-4">
+          <div>
+            <div className="data-label">Library</div>
+            <h2 className="mt-2 text-xl font-semibold text-[color:var(--ink)]">
+              {loading ? 'Loading trips' : `${trips.length} trip${trips.length === 1 ? '' : 's'} ready`}
+            </h2>
+          </div>
+          <p className="max-w-md text-right text-sm leading-6 text-[color:var(--muted)]">
+            Each trip opens its own map board with saved places, activities, check-ins, and live
+            split expenses.
+          </p>
+        </div>
+
         {loading ? (
-          <p className="text-sm text-foreground/60">Loading trips…</p>
+          <p className="text-sm text-[color:var(--muted)]">Loading trips…</p>
         ) : trips.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-black/15 px-4 py-8 text-center text-sm text-foreground/60 dark:border-white/15">
-            No trips yet. Create your first one above.
+          <p className="rounded-[1.4rem] border border-dashed border-[color:var(--line-strong)] px-4 py-10 text-center text-sm text-[color:var(--muted)]">
+            No trips yet. Create the first one above and the workspace opens from there.
           </p>
         ) : (
-          <ul className="grid gap-3">
+          <ul className="grid gap-3 lg:grid-cols-2">
             {trips.map((trip) => (
               <li key={trip.$id}>
                 <Link
                   href={`/trips/${trip.$id}`}
-                  className="block rounded-xl border border-black/10 p-4 transition-colors hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/5"
+                  className="group block rounded-[1.6rem] border border-[color:var(--line)] bg-[color:var(--panel-strong)] p-5 hover:-translate-y-0.5 hover:border-[color:var(--line-strong)] hover:bg-white"
                 >
-                  <div className="font-medium">{trip.name}</div>
-                  {trip.destination && (
-                    <div className="text-sm text-foreground/60">{trip.destination}</div>
-                  )}
-                  <div className="mt-1 text-xs text-foreground/40">
-                    {formatDateRange(trip.startDate, trip.endDate)}
+                  <div className="data-label">{formatDateRange(trip.startDate, trip.endDate)}</div>
+                  <div className="mt-3 text-2xl font-semibold text-[color:var(--ink)]">{trip.name}</div>
+                  <div className="mt-2 text-sm text-[color:var(--muted)]">
+                    {trip.destination || 'Destination still flexible'}
                   </div>
+                  <div className="mt-6 text-sm font-medium text-[color:var(--accent)]">Open board</div>
                 </Link>
               </li>
             ))}
@@ -110,27 +131,30 @@ function NewTripForm({
   return (
     <form
       onSubmit={submit}
-      className="mt-6 flex flex-col gap-3 rounded-xl border border-black/10 p-4 sm:flex-row dark:border-white/10"
+      className="rounded-[1.8rem] border border-[color:var(--line)] bg-[color:var(--panel-strong)] p-5"
     >
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Trip name (e.g. Goa 2026)"
-        className="flex-1 rounded-lg border border-black/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-foreground/40 dark:border-white/15"
-      />
-      <input
-        value={destination}
-        onChange={(e) => setDestination(e.target.value)}
-        placeholder="Destination (optional)"
-        className="flex-1 rounded-lg border border-black/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-foreground/40 dark:border-white/15"
-      />
-      <button
-        type="submit"
-        disabled={creating || !name.trim()}
-        className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
-      >
-        {creating ? 'Creating…' : 'Create trip'}
-      </button>
+      <div className="data-label">Create a trip</div>
+      <div className="mt-4 grid gap-3">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Trip name, like Goa 2026"
+          className="w-full rounded-full border border-[color:var(--line)] bg-white/75 px-4 py-3 text-sm text-[color:var(--ink)] outline-none focus:border-[color:var(--accent)]"
+        />
+        <input
+          value={destination}
+          onChange={(e) => setDestination(e.target.value)}
+          placeholder="Destination or anchor city"
+          className="w-full rounded-full border border-[color:var(--line)] bg-white/75 px-4 py-3 text-sm text-[color:var(--ink)] outline-none focus:border-[color:var(--accent)]"
+        />
+        <button
+          type="submit"
+          disabled={creating || !name.trim()}
+          className="rounded-full bg-[color:var(--ink)] px-4 py-3 text-sm font-semibold text-[color:var(--paper)] hover:-translate-y-0.5 disabled:opacity-50"
+        >
+          {creating ? 'Creating…' : 'Create trip'}
+        </button>
+      </div>
     </form>
   );
 }

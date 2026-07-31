@@ -42,38 +42,38 @@ export function PlaceInfoCard({
   const [category, setCategory] = useState<PoiCategory>(place.category);
 
   return (
-    <div className="absolute bottom-3 left-1/2 w-[min(460px,92%)] -translate-x-1/2 rounded-xl border border-black/10 bg-background p-4 shadow-xl dark:border-white/15">
+    <div className="absolute bottom-4 left-1/2 w-[min(500px,92%)] -translate-x-1/2 rounded-[1.8rem] border border-[color:var(--line)] bg-[color:var(--panel-strong)] p-4 shadow-[0_24px_50px_rgba(19,33,44,0.22)] backdrop-blur">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{place.name}</p>
-          <p className="mt-0.5 text-xs capitalize text-foreground/60">
+          <p className="truncate text-sm font-semibold text-[color:var(--ink)]">{place.name}</p>
+          <p className="mt-0.5 text-xs capitalize text-[color:var(--muted)]">
             {place.rawType?.replace(/_/g, ' ') ?? place.category}
           </p>
         </div>
         <button
           onClick={onClose}
-          className="shrink-0 rounded px-2 py-1 text-xs text-foreground/60 hover:bg-black/5 dark:hover:bg-white/10"
+          className="shrink-0 rounded-full border border-[color:var(--line)] px-2.5 py-1 text-xs text-[color:var(--muted)] hover:bg-white"
           aria-label="Close"
         >
           ✕
         </button>
       </div>
 
-      <p className="mt-2 min-h-[1rem] text-xs text-foreground/60">
+      <p className="mt-2 min-h-[1rem] text-xs text-[color:var(--muted)]">
         {loadingDetails ? 'Looking up address…' : (place.address ?? 'No address found.')}
       </p>
 
-      <div className="mt-3 flex gap-2">
+      <div className="mt-4 flex gap-2">
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Name for this place"
-          className="flex-1 rounded-lg border border-black/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-foreground/40 dark:border-white/15"
+          className="flex-1 rounded-full border border-[color:var(--line)] bg-white/75 px-4 py-3 text-sm text-[color:var(--ink)] outline-none focus:border-[color:var(--accent)]"
         />
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value as PoiCategory)}
-          className="rounded-lg border border-black/10 bg-transparent px-2 py-2 text-sm capitalize outline-none dark:border-white/15"
+          className="rounded-full border border-[color:var(--line)] bg-white/75 px-3 py-3 text-sm capitalize text-[color:var(--ink)] outline-none"
         >
           {CATEGORIES.map((c) => (
             <option key={c} value={c} className="capitalize">
@@ -89,7 +89,7 @@ export function PlaceInfoCard({
             type="button"
             onClick={onCreateActivity}
             disabled={busy}
-            className="rounded-lg px-3 py-1.5 text-sm text-foreground/70 hover:bg-black/5 disabled:opacity-50 dark:hover:bg-white/10"
+            className="rounded-full border border-[color:var(--line)] px-4 py-2 text-sm text-[color:var(--ink)] hover:bg-white disabled:opacity-50"
           >
             Create activity
           </button>
@@ -99,7 +99,7 @@ export function PlaceInfoCard({
             type="button"
             onClick={onLogVisit}
             disabled={busy}
-            className="rounded-lg border border-black/15 px-3 py-1.5 text-sm hover:bg-black/5 disabled:opacity-50 dark:border-white/20 dark:hover:bg-white/10"
+            className="rounded-full bg-[color:var(--accent-2)] px-4 py-2 text-sm font-medium text-white hover:-translate-y-0.5 disabled:opacity-50"
           >
             Log visit here
           </button>
@@ -108,7 +108,7 @@ export function PlaceInfoCard({
           type="button"
           onClick={() => onAddToPlaces(name.trim() || place.name, category)}
           disabled={busy}
-          className="rounded-lg bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-50"
+          className="rounded-full bg-[color:var(--ink)] px-4 py-2 text-sm font-medium text-[color:var(--paper)] disabled:opacity-50"
         >
           Add to Places
         </button>

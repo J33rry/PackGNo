@@ -25,33 +25,63 @@ function LoginContent() {
   }, [loading, user, router]);
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-6 px-6 py-16">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight">Welcome to PackNGo</h1>
-        <p className="mt-2 text-sm text-foreground/70">
-          Sign in to plan and run trips with your group.
-        </p>
+    <main className="shell flex min-h-screen items-center px-4 py-6 sm:px-6">
+      <div className="grid w-full gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
+        <section className="glass overflow-hidden rounded-[2rem] px-6 py-8 sm:px-8 sm:py-10">
+          <div className="eyebrow">PackNGo sign in</div>
+          <h1 className="display mt-4 max-w-3xl text-[clamp(3rem,8vw,5.75rem)] leading-[0.94] text-[color:var(--ink)]">
+            Trips look calmer when the group has one board.
+          </h1>
+          <p className="mt-5 max-w-xl text-lg leading-8 text-[color:var(--muted)]">
+            Use your Google account to open the shared workspace for maps, expenses, check-ins,
+            and trip notes.
+          </p>
+          <div className="mt-10 grid gap-3 sm:grid-cols-3">
+            <Value title="Places" value="Live" body="Realtime points, check-ins, and map context." />
+            <Value title="Expenses" value="Split" body="Shared balances with UPI settle-up." />
+            <Value title="Activities" value="Journal" body="Capture what actually happened there." />
+          </div>
+        </section>
+
+        <section className="glass flex flex-col justify-center rounded-[2rem] px-6 py-8 sm:px-8">
+          <div className="data-label">Continue</div>
+          <h2 className="mt-3 text-2xl font-semibold text-[color:var(--ink)]">Open your trip workspace</h2>
+          <p className="mt-2 text-sm leading-7 text-[color:var(--muted)]">
+            One login, then your trips, saved places, and balances stay synced with the group.
+          </p>
+
+          {oauthError && (
+            <p className="mt-6 rounded-[1.2rem] border border-[color:var(--danger)]/20 bg-[color:var(--paper)] px-4 py-3 text-sm text-[color:var(--danger)]">
+              Sign-in was cancelled or failed. Please try again.
+            </p>
+          )}
+
+          <button
+            onClick={loginWithGoogle}
+            disabled={loading}
+            className="mt-8 flex w-full items-center justify-center gap-3 rounded-full bg-[color:var(--ink)] px-5 py-4 text-sm font-semibold text-[color:var(--paper)] hover:-translate-y-0.5 disabled:opacity-50"
+          >
+            <GoogleIcon />
+            Continue with Google
+          </button>
+
+          <p className="mt-4 text-xs leading-6 text-[color:var(--muted)]">
+            Google sign-in is handled by Appwrite OAuth. Your account opens the same trip workspace
+            on web now, with mobile functionality left aligned for a later pass.
+          </p>
+        </section>
       </div>
-
-      {oauthError && (
-        <p className="w-full rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
-          Sign-in was cancelled or failed. Please try again.
-        </p>
-      )}
-
-      <button
-        onClick={loginWithGoogle}
-        disabled={loading}
-        className="flex w-full items-center justify-center gap-3 rounded-lg border border-black/10 bg-white px-5 py-3 text-sm font-medium text-black shadow-sm transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/15"
-      >
-        <GoogleIcon />
-        Continue with Google
-      </button>
-
-      <p className="text-center text-xs text-foreground/50">
-        By continuing you agree to travel responsibly with your friends.
-      </p>
     </main>
+  );
+}
+
+function Value({ title, value, body }: { title: string; value: string; body: string }) {
+  return (
+    <div className="rounded-[1.4rem] border border-[color:var(--line)] bg-[color:var(--panel-strong)] p-4">
+      <div className="data-label">{title}</div>
+      <div className="display mt-3 text-3xl text-[color:var(--ink)]">{value}</div>
+      <p className="mt-2 text-sm leading-6 text-[color:var(--muted)]">{body}</p>
+    </div>
   );
 }
 

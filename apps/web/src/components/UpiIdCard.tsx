@@ -52,11 +52,12 @@ export function UpiIdCard() {
   return (
     <form
       onSubmit={save}
-      className="mt-6 flex flex-col gap-2 rounded-xl border border-black/10 p-4 sm:flex-row sm:items-center dark:border-white/10"
+      className="glass flex flex-col gap-4 rounded-[2rem] px-6 py-5 sm:flex-row sm:items-center"
     >
       <div className="flex-1">
-        <label className="text-sm font-medium">Your UPI id</label>
-        <p className="text-xs text-foreground/50">
+        <div className="data-label">Settle-up destination</div>
+        <label className="mt-2 block text-base font-semibold text-[color:var(--ink)]">Your UPI id</label>
+        <p className="mt-1 text-xs leading-6 text-[color:var(--muted)]">
           Others use this to settle up with you (e.g. yourname@okhdfcbank).
         </p>
       </div>
@@ -67,16 +68,16 @@ export function UpiIdCard() {
           setStatus('idle');
         }}
         placeholder="yourname@bank"
-        className="rounded-lg border border-black/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-foreground/40 sm:w-64 dark:border-white/15"
+        className="rounded-full border border-[color:var(--line)] bg-white/75 px-4 py-3 text-sm text-[color:var(--ink)] outline-none focus:border-[color:var(--accent)] sm:w-72"
       />
       <button
         type="submit"
         disabled={!dirty || status === 'saving'}
-        className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-50"
+        className="rounded-full bg-[color:var(--ink)] px-5 py-3 text-sm font-semibold text-[color:var(--paper)] disabled:opacity-50"
       >
         {status === 'saving' ? 'Saving…' : status === 'saved' && !dirty ? 'Saved ✓' : 'Save'}
       </button>
-      {message && <span className="text-xs text-red-600 dark:text-red-400">{message}</span>}
+      {message && <span className="text-xs text-[color:var(--danger)]">{message}</span>}
     </form>
   );
 }
