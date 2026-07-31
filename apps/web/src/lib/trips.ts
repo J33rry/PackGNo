@@ -18,7 +18,7 @@ import {
   Query,
   Role,
 } from './appwrite';
-import { memberScopedId, type Trip, type TripDoc, type TripMember } from '@sync/shared';
+import { type Trip, type TripDoc, type TripMember } from '@sync/shared';
 
 export interface NewTripInput {
   name: string;
@@ -74,10 +74,14 @@ export async function createTrip(input: NewTripInput): Promise<TripDoc> {
     joinedAt: new Date().toISOString(),
   };
 
+  // A composite `${tripId}_${userId}` id would exceed Appwrite's 36-char
+  // documentId limit (two ~20-char ids), so use a generated id. The collection's
+  // unique index on (tripId, userId) is what actually enforces one row per
+  // member — no deterministic id needed for that guarantee.
   await databases.createDocument(
     DB_ID,
     COLLECTIONS.tripMembers,
-    memberScopedId(tripDoc.$id, user.$id),
+    ID.unique(),
     member,
     [teamRead, Permission.update(Role.user(user.$id))],
   );

@@ -186,6 +186,29 @@ const collections = [
     indexes: [KEY('tripId_idx', ['tripId']), UNIQUE('trip_user_unique', ['tripId', 'userId'])],
   },
   {
+    id: 'visits',
+    name: 'Visit check-ins',
+    permissions: usersCreate,
+    attributes: [
+      S('tripId', 64, true), S('userId', 64, true), F('lat', true), F('lng', true),
+      S('placeName', 255, false), S('placeCategory', 64, false), S('address', 512, false),
+      S('note', 1000, false), D('visitedAt', true), D('createdAt', true),
+    ],
+    indexes: [KEY('tripId_idx', ['tripId']), KEY('trip_user_idx', ['tripId', 'userId'])],
+  },
+  {
+    id: 'activities',
+    name: 'Activities',
+    permissions: usersCreate,
+    attributes: [
+      S('tripId', 64, true), S('userId', 64, true), S('title', 255, true),
+      S('description', 4000, true), S('placeName', 255, false), F('lat', false), F('lng', false),
+      S('category', 64, false), E('source', ['manual', 'ai'], false, 'manual'),
+      S('visitId', 64, false), D('occurredAt', true), D('createdAt', true),
+    ],
+    indexes: [KEY('tripId_idx', ['tripId']), KEY('trip_user_idx', ['tripId', 'userId'])],
+  },
+  {
     id: 'expenses',
     name: 'Expenses',
     permissions: usersCreate,

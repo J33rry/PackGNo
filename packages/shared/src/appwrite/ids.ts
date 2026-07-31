@@ -12,6 +12,8 @@ export const COLLECTIONS = {
   tripMembers: 'trip_members',
   pois: 'pois',
   locations: 'locations',
+  visits: 'visits',
+  activities: 'activities',
   expenses: 'expenses',
   expenseSplits: 'expense_splits',
   settlements: 'settlements',
@@ -40,7 +42,14 @@ export const OAUTH_PROVIDERS = {
 /**
  * Build the deterministic document id for a per-user-per-trip singleton doc
  * (live location pings, poll votes). Using a stable id turns "insert or
- * update" into a plain upsert and enforces one-row-per-user without a query.
+ * update" into a plain upsert.
+ *
+ * ⚠️ Appwrite caps `documentId` at 36 chars. Two Appwrite-generated ids
+ * (~20 chars each) plus the separator overflow that limit, so this ONLY works
+ * when both parts are known-short (e.g. a short custom parentId). For docs keyed
+ * by two full Appwrite ids, use `ID.unique()` and rely on a unique index over
+ * the (parent, user) attributes instead — every member-scoped collection in
+ * this app already defines one.
  */
 export function memberScopedId(parentId: string, userId: string): string {
   return `${parentId}_${userId}`;

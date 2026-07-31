@@ -15,6 +15,7 @@ import * as WebBrowser from 'expo-web-browser';
 import type { Models } from 'react-native-appwrite';
 import {
   account,
+  appwriteConfig,
   databases,
   DB_ID,
   COLLECTIONS,
@@ -38,9 +39,12 @@ export class OAuthCancelledError extends Error {
  * {@link OAuthCancelledError} if the user dismissed the web view.
  */
 export async function loginWithGoogle(): Promise<void> {
-  // Resolves to `sync://auth` in a dev/production build, and to the Expo Go
-  // tunnel URL when running in Expo Go — both are valid redirect targets.
-  const redirectUri = Linking.createURL('auth');
+  // Appwrite validates the OAuth success/failure URLs and rejects arbitrary app
+  // schemes with "Invalid `success` param ... Register your new client as a new
+  // platform" — our own `packngo://` scheme included. The one scheme it always
+  // accepts for native apps is `appwrite-callback-<projectId>://`, which is why
+  // app.json registers that scheme alongside `packngo`.
+  const redirectUri = `appwrite-callback-${appwriteConfig.projectId}://`;
 
   const authUrl = account.createOAuth2Token(OAuthProvider.Google, redirectUri, redirectUri);
   if (!authUrl) throw new Error('Could not start Google sign-in.');

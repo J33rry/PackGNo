@@ -42,6 +42,9 @@ export type PollStatus = 'open' | 'closed';
 
 export type SosStatus = 'active' | 'resolved';
 
+/** How an activity's description was authored. */
+export type ActivitySource = 'manual' | 'ai';
+
 // ---------------------------------------------------------------------------
 // Entities
 // ---------------------------------------------------------------------------
@@ -101,6 +104,47 @@ export interface LocationPing {
   heading?: number | null;
   /** ISO timestamp of the fix. */
   timestamp: string;
+}
+
+/**
+ * An on-demand "I visited here" check-in. Append-only history (unlike
+ * `LocationPing`, which is a single upserted current-position doc per user).
+ * Place fields are filled by reverse-geocoding the coordinate when available.
+ */
+export interface Visit {
+  tripId: string;
+  userId: string;
+  lat: number;
+  lng: number;
+  placeName?: string | null;
+  placeCategory?: string | null;
+  address?: string | null;
+  note?: string | null;
+  /** ISO timestamp of when the user was there (defaults to check-in time). */
+  visitedAt: string;
+  createdAt: string;
+}
+
+/**
+ * A trip activity/journal entry. Either typed by hand (`source: 'manual'`) or
+ * drafted by the LLM from a detected place (`source: 'ai'`); the user can edit
+ * either before saving. Place/coords are optional so a note need not be pinned.
+ */
+export interface Activity {
+  tripId: string;
+  userId: string;
+  title: string;
+  description: string;
+  placeName?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  category?: string | null;
+  source: ActivitySource;
+  /** The `visits` doc this activity was generated from, if any. */
+  visitId?: string | null;
+  /** ISO timestamp of when the activity happened. */
+  occurredAt: string;
+  createdAt: string;
 }
 
 export interface Expense {
@@ -182,6 +226,8 @@ export type TripDoc = WithDoc<Trip>;
 export type TripMemberDoc = WithDoc<TripMember>;
 export type PoiDoc = WithDoc<Poi>;
 export type LocationPingDoc = WithDoc<LocationPing>;
+export type VisitDoc = WithDoc<Visit>;
+export type ActivityDoc = WithDoc<Activity>;
 export type ExpenseDoc = WithDoc<Expense>;
 export type ExpenseSplitDoc = WithDoc<ExpenseSplit>;
 export type SettlementDoc = WithDoc<Settlement>;

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createTrip, listMyTrips, type NewTripInput } from '@/lib/trips';
+import { UpiIdCard } from '@/components/UpiIdCard';
 import type { TripDoc } from '@sync/shared';
 
 export default function TripsPage() {
@@ -47,6 +48,8 @@ export default function TripsPage() {
       </p>
 
       <NewTripForm onCreate={handleCreate} creating={creating} />
+
+      <UpiIdCard />
 
       {error && (
         <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
