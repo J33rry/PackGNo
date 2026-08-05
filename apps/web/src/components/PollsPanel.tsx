@@ -163,7 +163,7 @@ export function PollsPanel({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-6 pb-6 pt-4">
+    <div className="board-card mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 p-5 sm:p-6">
       {error && (
         <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-600 dark:text-red-400">
           {error}

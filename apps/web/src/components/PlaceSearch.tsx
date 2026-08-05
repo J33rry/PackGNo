@@ -15,6 +15,7 @@ import {
   type PlacePrediction,
   type ViewBox,
 } from '@/lib/places';
+import { Search } from '@/components/marketing/icons';
 
 interface PlaceSearchProps {
   getViewBox?: () => ViewBox | undefined;
@@ -91,12 +92,13 @@ export function PlaceSearch({ getViewBox, onSelect }: PlaceSearchProps) {
 
   return (
     <div className="relative">
+      <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[color:var(--faint)]" />
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => results.length > 0 && setOpen(true)}
         placeholder="Search hotels, cafes, landmarks, stations"
-        className="w-full rounded-full border border-[color:var(--line)] bg-[color:var(--panel)] px-4 py-3 text-sm text-[color:var(--ink)] outline-none transition focus:border-[color:var(--accent)]"
+        className="w-full rounded-full border border-[color:var(--line)] bg-[#1b1b1e] px-4 py-3 pl-10 text-sm text-[color:var(--ink)] outline-none transition placeholder:text-[color:var(--faint)] focus:border-[color:var(--accent)]/50"
       />
       {loading && (
         <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[color:var(--muted)]">
@@ -105,14 +107,14 @@ export function PlaceSearch({ getViewBox, onSelect }: PlaceSearchProps) {
       )}
 
       {open && (results.length > 0 || error) && (
-        <ul className="absolute z-20 mt-2 max-h-80 w-full overflow-auto rounded-[1.5rem] border border-[color:var(--line-strong)] bg-[color:var(--paper)] p-2 shadow-[0_22px_60px_rgba(19,33,44,0.18)]">
+        <ul className="absolute z-20 mt-2 max-h-80 w-full overflow-auto rounded-2xl border border-[color:var(--line-strong)] bg-[#141416] p-2 shadow-[0_22px_60px_rgba(0,0,0,0.55)]">
           {error && <li className="px-3 py-2 text-xs text-[color:var(--danger)]">{error}</li>}
           {results.map((place) => (
             <li key={place.placeId}>
               <button
                 onClick={() => choose(place)}
                 disabled={resolvingId === place.placeId}
-                className="flex w-full flex-col items-start gap-0.5 rounded-2xl px-3 py-3 text-left transition hover:bg-[color:var(--panel)] disabled:opacity-60"
+                className="flex w-full flex-col items-start gap-0.5 rounded-xl px-3 py-3 text-left transition hover:bg-white/5 disabled:opacity-60"
               >
                 <span className="text-sm font-medium text-[color:var(--ink)]">{place.primaryText}</span>
                 {place.secondaryText && (

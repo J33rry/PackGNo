@@ -42,7 +42,7 @@ export function PlaceInfoCard({
   const [category, setCategory] = useState<PoiCategory>(place.category);
 
   return (
-    <div className="absolute bottom-4 left-1/2 w-[min(500px,92%)] -translate-x-1/2 rounded-[1.8rem] border border-[color:var(--line)] bg-[color:var(--panel-strong)] p-4 shadow-[0_24px_50px_rgba(19,33,44,0.22)] backdrop-blur">
+    <div className="absolute bottom-4 left-1/2 w-[min(500px,92%)] -translate-x-1/2 rounded-2xl border border-[color:var(--line-strong)] bg-[#161618]/95 p-4 shadow-[0_24px_50px_rgba(0,0,0,0.6)] backdrop-blur">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-[color:var(--ink)]">{place.name}</p>
@@ -52,7 +52,7 @@ export function PlaceInfoCard({
         </div>
         <button
           onClick={onClose}
-          className="shrink-0 rounded-full border border-[color:var(--line)] px-2.5 py-1 text-xs text-[color:var(--muted)] hover:bg-white"
+          className="shrink-0 rounded-full border border-[color:var(--line)] px-2.5 py-1 text-xs text-[color:var(--muted)] hover:bg-white/10"
           aria-label="Close"
         >
           ✕
@@ -68,12 +68,12 @@ export function PlaceInfoCard({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Name for this place"
-          className="flex-1 rounded-full border border-[color:var(--line)] bg-white/75 px-4 py-3 text-sm text-[color:var(--ink)] outline-none focus:border-[color:var(--accent)]"
+          className="flex-1 rounded-full border border-[color:var(--line)] bg-white/5 px-4 py-3 text-sm text-[color:var(--ink)] outline-none focus:border-[color:var(--accent)]"
         />
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value as PoiCategory)}
-          className="rounded-full border border-[color:var(--line)] bg-white/75 px-3 py-3 text-sm capitalize text-[color:var(--ink)] outline-none"
+          className="rounded-full border border-[color:var(--line)] bg-white/5 px-3 py-3 text-sm capitalize text-[color:var(--ink)] outline-none"
         >
           {CATEGORIES.map((c) => (
             <option key={c} value={c} className="capitalize">
@@ -89,7 +89,7 @@ export function PlaceInfoCard({
             type="button"
             onClick={onCreateActivity}
             disabled={busy}
-            className="rounded-full border border-[color:var(--line)] px-4 py-2 text-sm text-[color:var(--ink)] hover:bg-white disabled:opacity-50"
+            className="rounded-full border border-[color:var(--line)] px-4 py-2 text-sm text-[color:var(--ink)] hover:bg-white/10 disabled:opacity-50"
           >
             Create activity
           </button>
@@ -108,7 +108,7 @@ export function PlaceInfoCard({
           type="button"
           onClick={() => onAddToPlaces(name.trim() || place.name, category)}
           disabled={busy}
-          className="rounded-full bg-[color:var(--ink)] px-4 py-2 text-sm font-medium text-[color:var(--paper)] disabled:opacity-50"
+          className="rounded-full bg-[color:var(--ink)] px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
         >
           Add to Places
         </button>

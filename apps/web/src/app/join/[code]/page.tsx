@@ -40,14 +40,18 @@ export default function JoinPage({ params }: { params: Promise<{ code: string }>
   const loginHref = `/login?redirect=${encodeURIComponent(`/join/${code}`)}`;
 
   return (
-    <main className="shell flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="glass w-full max-w-md rounded-[2rem] px-6 py-8 text-center sm:px-8">
+    <main className="flex min-h-screen items-center justify-center bg-black px-4 py-10">
+      <div className="w-full max-w-md rounded-3xl border border-[color:var(--line)] bg-[#101012] px-6 py-10 text-center sm:px-8">
         <div className="eyebrow">Trip invite</div>
-        <h1 className="display mt-3 text-[clamp(2rem,5vw,3rem)] leading-[0.98] text-[color:var(--ink)]">
+        <h1 className="display mt-4 flex items-center justify-center text-4xl text-[color:var(--ink)]">
           Join the trip
+          <span className="live-dot ml-2 h-2 w-2" aria-hidden="true" />
         </h1>
-        <p className="mt-2 text-sm text-[color:var(--muted)]">
-          Invite code <span className="font-mono font-semibold text-[color:var(--ink)]">{code || '—'}</span>
+        <p className="mt-3 text-sm text-[color:var(--muted)]">
+          Invite code{' '}
+          <span className="font-mono text-lg font-semibold tracking-[0.2em] text-[color:var(--ink)]">
+            {code || '—'}
+          </span>
         </p>
 
         {loading ? (
@@ -57,20 +61,17 @@ export default function JoinPage({ params }: { params: Promise<{ code: string }>
             <p className="text-sm text-[color:var(--muted)]">Sign in to join this trip.</p>
             <Link
               href={loginHref}
-              className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-[color:var(--ink)] px-5 py-4 text-sm font-semibold text-[color:var(--paper)] hover:-translate-y-0.5"
+              className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[color:var(--ink)] px-5 py-3.5 text-sm font-medium text-black hover:shadow-[0_0_28px_rgba(52,211,153,0.3)]"
             >
               Sign in to continue
             </Link>
           </div>
         ) : error ? (
           <div className="mt-8">
-            <p className="rounded-[1.2rem] border border-[color:var(--danger)]/20 bg-[color:var(--paper)] px-4 py-3 text-sm text-[color:var(--danger)]">
+            <p className="rounded-2xl border border-[color:var(--danger)]/30 bg-[color:var(--danger)]/10 px-4 py-3 text-sm text-[color:var(--danger)]">
               {error}
             </p>
-            <Link
-              href="/trips"
-              className="mt-4 inline-block text-sm font-medium text-[color:var(--accent)] underline"
-            >
+            <Link href="/trips" className="mt-4 inline-block text-sm font-medium text-[color:var(--accent)]">
               Go to my trips
             </Link>
           </div>

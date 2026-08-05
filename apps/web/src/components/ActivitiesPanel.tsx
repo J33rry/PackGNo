@@ -108,7 +108,7 @@ export function ActivitiesPanel({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-6 pb-6 pt-4">
+    <div className="board-card mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 p-5 sm:p-6">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground/70">Activities ({activities.length})</h2>
         {!showForm && (

@@ -175,14 +175,16 @@ export function LiveLocationCard({
   const sharedCount = live.filter((l) => !l.isSelf).length;
 
   return (
-    <section className="glass rounded-[2rem] px-5 py-5">
+    <section className="board-card px-5 py-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="data-label">Live location</div>
-          <h2 className="mt-1 text-lg font-semibold text-[color:var(--ink)]">
-            {live.length === 0 ? 'No one sharing' : `${live.length} live`}
-          </h2>
-          <p className="mt-1 text-xs text-[color:var(--muted)]">
+          <div className="flex items-center gap-2">
+            <span className={`live-dot h-2 w-2 ${live.length === 0 ? 'opacity-40' : ''}`} aria-hidden="true" />
+            <h2 className="text-sm font-semibold text-[color:var(--ink)]">
+              {live.length === 0 ? 'No one sharing' : `${live.length} live`}
+            </h2>
+          </div>
+          <p className="mt-1.5 text-xs text-[color:var(--muted)]">
             {sharing
               ? 'Your position is visible to the group while this tab is open.'
               : 'Opt in to show your live position on the map.'}
@@ -193,16 +195,16 @@ export function LiveLocationCard({
           aria-pressed={sharing}
           className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition ${
             sharing
-              ? 'bg-[color:var(--danger)] text-white hover:-translate-y-0.5'
-              : 'bg-[color:var(--accent-2)] text-white hover:-translate-y-0.5'
+              ? 'bg-[color:var(--danger)]/15 text-[color:var(--danger)] hover:bg-[color:var(--danger)]/25'
+              : 'bg-[color:var(--accent)]/15 text-[color:var(--accent)] hover:bg-[color:var(--accent)]/25'
           }`}
         >
-          {sharing ? 'Stop sharing' : 'Share my location'}
+          {sharing ? 'Stop sharing' : 'Share location'}
         </button>
       </div>
 
       {error && (
-        <p className="mt-3 rounded-[1.2rem] border border-[color:var(--danger)]/20 bg-[color:var(--paper)] px-3 py-2 text-xs text-[color:var(--danger)]">
+        <p className="mt-3 rounded-xl border border-[color:var(--danger)]/30 bg-[color:var(--danger)]/10 px-3 py-2 text-xs text-[color:var(--danger)]">
           {error}
         </p>
       )}

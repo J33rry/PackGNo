@@ -77,14 +77,14 @@ export function InviteMembersCard({
   }, [inviteUrl]);
 
   return (
-    <section className="glass rounded-[2rem] px-6 py-6 sm:px-8">
+    <section className="board-card px-6 py-6 sm:px-8">
       <div className="data-label">Members &amp; invites</div>
-      <h2 className="mt-1 text-2xl font-semibold text-[color:var(--ink)]">Bring people in</h2>
+      <h2 className="mt-1 text-2xl font-bold text-[color:var(--ink)]">Bring people in</h2>
       <p className="mt-1 text-sm text-[color:var(--muted)]">
         Anyone who opens the link or enters the code — once signed in — joins this trip.
       </p>
 
-      <div className="mt-5 rounded-[1.6rem] border border-[color:var(--line)] bg-[color:var(--paper)] p-4">
+      <div className="mt-5 rounded-2xl border border-[color:var(--line)] bg-[#17171a] p-4">
         {code ? (
           <>
             <div className="data-label">Share link</div>
@@ -93,18 +93,18 @@ export function InviteMembersCard({
                 readOnly
                 value={inviteUrl}
                 onFocus={(e) => e.currentTarget.select()}
-                className="min-w-0 flex-1 rounded-full border border-[color:var(--line)] bg-white/75 px-4 py-2.5 text-sm text-[color:var(--ink)] outline-none"
+                className="min-w-0 flex-1 rounded-full border border-[color:var(--line)] bg-white/5 px-4 py-2.5 text-sm text-[color:var(--ink)] outline-none"
               />
               <button
                 onClick={copy}
-                className="shrink-0 rounded-full bg-[color:var(--ink)] px-5 py-2.5 text-sm font-semibold text-[color:var(--paper)] hover:-translate-y-0.5"
+                className="shrink-0 rounded-full bg-[color:var(--ink)] px-5 py-2.5 text-sm font-semibold text-black hover:shadow-[0_0_24px_rgba(52,211,153,0.28)]"
               >
                 {copied ? 'Copied!' : 'Copy link'}
               </button>
             </div>
             <div className="mt-4 flex items-center gap-3">
               <span className="data-label">Or use code</span>
-              <span className="rounded-full border border-[color:var(--line)] bg-white/75 px-4 py-1.5 font-mono text-lg font-semibold tracking-[0.3em] text-[color:var(--ink)]">
+              <span className="rounded-full border border-[color:var(--line)] bg-white/5 px-4 py-1.5 font-mono text-lg font-semibold tracking-[0.3em] text-[color:var(--ink)]">
                 {code}
               </span>
             </div>
@@ -133,10 +133,10 @@ export function InviteMembersCard({
             {members.map((m) => (
               <li
                 key={m.userId}
-                className="flex items-center justify-between gap-2 rounded-[1.2rem] border border-[color:var(--line)] bg-[color:var(--panel-strong)] px-3 py-2 text-sm"
+                className="flex items-center justify-between gap-2 rounded-xl border border-[color:var(--line)] bg-[#1b1b1e] px-3 py-2 text-sm"
               >
                 <span className="flex items-center gap-2 truncate">
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[color:var(--accent-2)] text-xs font-semibold text-white">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[color:var(--accent)]/15 text-xs font-semibold text-[color:var(--accent)]">
                     {initialsOf(m.name)}
                   </span>
                   <span className="truncate text-[color:var(--ink)]">
@@ -145,7 +145,7 @@ export function InviteMembersCard({
                   </span>
                 </span>
                 {m.userId === trip.ownerId && (
-                  <span className="shrink-0 rounded-full bg-[color:var(--ink)] px-2.5 py-1 text-xs font-semibold text-[color:var(--paper)]">
+                  <span className="shrink-0 rounded-full bg-[color:var(--accent)]/15 px-2.5 py-1 text-xs font-semibold text-[color:var(--accent)]">
                     Owner
                   </span>
                 )}

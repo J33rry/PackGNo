@@ -24,8 +24,27 @@ import {
 import { listSosEvents, subscribeToSos } from '@/lib/sos';
 import { reverseGeocode, type Place } from '@/lib/places';
 import { poiCategoryFromTags, type PoiCategory, type PoiDoc, type SosEventDoc, type TripDoc, type VisitDoc } from '@sync/shared';
+import {
+  ArrowRight,
+  BarChart,
+  Calendar,
+  Compass,
+  LifeBuoy,
+  Locate,
+  MapPin,
+  Users,
+  Wallet,
+} from '@/components/marketing/icons';
 
 type Tab = 'map' | 'activities' | 'expenses' | 'voting' | 'members' | 'sos';
+
+const TABS: { id: Exclude<Tab, 'sos'>; label: string; icon: typeof Compass }[] = [
+  { id: 'map', label: 'Map', icon: Compass },
+  { id: 'activities', label: 'Activities', icon: Calendar },
+  { id: 'expenses', label: 'Expenses', icon: Wallet },
+  { id: 'voting', label: 'Voting', icon: BarChart },
+  { id: 'members', label: 'Members', icon: Users },
+];
 
 export default function TripDetailPage({ params }: { params: Promise<{ tripId: string }> }) {
   const { tripId } = use(params);
@@ -305,10 +324,10 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
   }
   if (!trip) {
     return (
-      <div className="glass rounded-[2rem] px-6 py-8">
+      <div className="board-card px-6 py-8">
         <p className="text-sm text-[color:var(--danger)]">{error ?? 'Trip not found.'}</p>
-        <Link href="/trips" className="mt-3 inline-block text-sm text-[color:var(--accent)] underline">
-          Back to trips
+        <Link href="/trips" className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[color:var(--accent)]">
+          Back to trips <ArrowRight size={14} />
         </Link>
       </div>
     );
@@ -316,60 +335,59 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
 
   return (
     <main className="flex flex-1 flex-col gap-4">
-      <section className="glass rounded-[2rem] px-6 py-6 sm:px-8">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="eyebrow">Trip board</div>
-            <h1 className="display mt-3 text-[clamp(2.6rem,5vw,4.4rem)] leading-[0.96] text-[color:var(--ink)]">
+      {/* header */}
+      <section className="board-card px-5 py-5 sm:px-7 sm:py-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <Link href="/trips" className="eyebrow inline-flex items-center gap-1.5 hover:opacity-80">
+              <ArrowRight size={12} className="rotate-180" /> All trips
+            </Link>
+            <h1 className="display mt-2 truncate text-2xl text-[color:var(--ink)] sm:text-3xl">
               {trip.name}
             </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-[color:var(--muted)]">
-              <span>{trip.destination || 'Destination still flexible'}</span>
-              <span className="h-1 w-1 rounded-full bg-[color:var(--line-strong)]" />
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[color:var(--muted)]">
+              <span className="inline-flex items-center gap-1.5">
+                <MapPin size={14} className="text-[color:var(--faint)]" />
+                {trip.destination || 'Destination flexible'}
+              </span>
+              <Dot />
               <span>{formatDateRange(trip.startDate, trip.endDate)}</span>
-              <span className="h-1 w-1 rounded-full bg-[color:var(--line-strong)]" />
+              <Dot />
               <span>{pois.length} places</span>
-              <span className="h-1 w-1 rounded-full bg-[color:var(--line-strong)]" />
+              <Dot />
               <span>{visits.length} check-ins</span>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-full border border-[color:var(--line)] bg-[color:var(--panel-strong)] px-4 py-2 text-sm text-[color:var(--muted)]">
-              Team-scoped realtime workspace
-            </div>
-            <Link href="/trips" className="rounded-full border border-[color:var(--line-strong)] px-4 py-2 text-sm font-medium text-[color:var(--ink)] hover:bg-white">
-              All trips
-            </Link>
+          <div className="flex shrink-0 items-center gap-2 self-start rounded-full border border-[color:var(--accent)]/25 bg-[color:var(--accent)]/8 px-3 py-1.5">
+            <span className="live-dot h-1.5 w-1.5" aria-hidden="true" />
+            <span className="text-xs font-medium text-[color:var(--accent)]">Live · realtime</span>
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          <TabButton active={tab === 'map'} onClick={() => setTab('map')}>
-            Map board
-          </TabButton>
-          <TabButton active={tab === 'activities'} onClick={() => setTab('activities')}>
-            Activities
-          </TabButton>
-          <TabButton active={tab === 'expenses'} onClick={() => setTab('expenses')}>
-            Expenses
-          </TabButton>
-          <TabButton active={tab === 'voting'} onClick={() => setTab('voting')}>
-            Voting
-          </TabButton>
-          <TabButton active={tab === 'members'} onClick={() => setTab('members')}>
-            Members
-          </TabButton>
+        {/* tab bar */}
+        <div className="mt-5 flex gap-1.5 overflow-x-auto rounded-2xl border border-[color:var(--line)] bg-black/30 p-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <TabButton key={id} active={tab === id} onClick={() => setTab(id)}>
+              <Icon size={16} />
+              {label}
+            </TabButton>
+          ))}
           <button
             onClick={() => setTab('sos')}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+            className={`ml-auto inline-flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold transition ${
               tab === 'sos'
                 ? 'bg-[color:var(--danger)] text-white'
-                : 'border border-[color:var(--danger)]/40 bg-[color:var(--danger)]/5 text-[color:var(--danger)] hover:bg-[color:var(--danger)]/10'
+                : 'text-[color:var(--danger)] hover:bg-[color:var(--danger)]/12'
             }`}
           >
-            🚨 SOS
+            <LifeBuoy size={16} />
+            SOS
             {activeSosCount > 0 && (
-              <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-[color:var(--danger)]">
+              <span
+                className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold ${
+                  tab === 'sos' ? 'bg-white text-[color:var(--danger)]' : 'bg-[color:var(--danger)] text-white'
+                }`}
+              >
                 {activeSosCount}
               </span>
             )}
@@ -380,17 +398,18 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
       {activeSosCount > 0 && tab !== 'sos' && (
         <button
           onClick={() => setTab('sos')}
-          className="flex items-center justify-between gap-3 rounded-[1.4rem] border border-[color:var(--danger)]/40 bg-[color:var(--danger)]/10 px-4 py-3 text-left"
+          className="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--danger)]/40 bg-[color:var(--danger)]/10 px-4 py-3 text-left"
         >
-          <span className="text-sm font-semibold text-[color:var(--danger)]">
-            🚨 {activeSosCount} active {activeSosCount === 1 ? 'alert' : 'alerts'} — someone on this trip needs help.
+          <span className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--danger)]">
+            <LifeBuoy size={16} />
+            {activeSosCount} active {activeSosCount === 1 ? 'alert' : 'alerts'} — someone needs help.
           </span>
           <span className="shrink-0 text-sm font-semibold text-[color:var(--danger)] underline">View</span>
         </button>
       )}
 
       {error && (
-        <p className="rounded-[1.4rem] border border-[color:var(--danger)]/20 bg-[color:var(--paper)] px-4 py-3 text-sm text-[color:var(--danger)]">
+        <p className="rounded-2xl border border-[color:var(--danger)]/30 bg-[color:var(--danger)]/10 px-4 py-3 text-sm text-[color:var(--danger)]">
           {error}
         </p>
       )}
@@ -444,20 +463,12 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
 
       {tab === 'map' && (
         <div className="workspace-grid flex-1">
-          <div className="glass flex flex-col gap-3 rounded-[2rem] p-4 sm:p-5">
-            <div className="flex items-center justify-between gap-3 px-1">
-              <div>
-                <div className="data-label">Map board</div>
-                <p className="mt-1 text-sm text-[color:var(--muted)]">
-                  Search Google Places, tap map POIs, or drop a pin to turn a location into a saved place, check-in, or activity.
-                </p>
-              </div>
-            </div>
+          <div className="board-card flex flex-col gap-3 p-4 sm:p-5">
             <PlaceSearch
               getViewBox={() => mapHandle.current?.getViewBox()}
               onSelect={handleSearchSelect}
             />
-            <div className="relative min-h-[520px] flex-1 overflow-hidden rounded-[1.8rem] border border-[color:var(--line)] bg-[color:var(--paper-strong)]">
+            <div className="relative min-h-[520px] flex-1 overflow-hidden rounded-[1.4rem] border border-[color:var(--line)] bg-[#141416]">
               <TripMap
                 ref={mapHandle}
                 pois={pois}
@@ -468,8 +479,8 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
                 className="absolute inset-0 h-full w-full"
               />
               {!selectedPlace && (
-                <p className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-[color:var(--ink)] px-4 py-2 text-xs text-[color:var(--paper)] shadow-[0_14px_26px_rgba(23,50,77,0.24)]">
-                  Tap a Google map place or drop a pin to start
+                <p className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-[color:var(--ink)] px-4 py-2 text-xs font-medium text-black shadow-[0_14px_26px_rgba(0,0,0,0.4)]">
+                  Tap a place or drop a pin to start
                 </p>
               )}
               {selectedPlace && (
@@ -497,15 +508,14 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
               />
             )}
 
-            <section className="glass rounded-[2rem] px-5 py-5">
-              <div className="mb-3 flex items-end justify-between gap-3">
-                <div>
-                  <div className="data-label">Places</div>
-                  <h2 className="mt-1 text-lg font-semibold text-[color:var(--ink)]">{pois.length} saved</h2>
-                </div>
+            <section className="board-card px-5 py-5">
+              <div className="mb-3 flex items-center gap-2">
+                <MapPin size={15} className="text-[color:var(--accent)]" />
+                <h2 className="text-sm font-semibold text-[color:var(--ink)]">Places</h2>
+                <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-[color:var(--muted)]">{pois.length}</span>
               </div>
               {pois.length === 0 ? (
-                <p className="rounded-[1.4rem] border border-dashed border-[color:var(--line-strong)] px-4 py-8 text-center text-sm text-[color:var(--muted)]">
+                <p className="rounded-xl border border-dashed border-[color:var(--line-strong)] px-4 py-8 text-center text-sm text-[color:var(--muted)]">
                   No places yet. Search or tap the map to add one.
                 </p>
               ) : (
@@ -513,27 +523,27 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
                   {pois.map((poi) => (
                     <li
                       key={poi.$id}
-                      className="rounded-[1.4rem] border border-[color:var(--line)] bg-[color:var(--panel-strong)] p-3 text-sm"
+                      className="rounded-xl border border-[color:var(--line)] bg-[#17171a] p-3 text-sm"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <div className={poi.visitStatus === 'visited' ? 'text-[color:var(--muted)] line-through opacity-70' : 'text-[color:var(--ink)]'}>
                             {poi.name}
                           </div>
-                          <div className="mt-1 text-xs capitalize text-[color:var(--muted)]">{poi.category}</div>
+                          <div className="mt-1 text-xs capitalize text-[color:var(--faint)]">{poi.category}</div>
                         </div>
                         <div className="flex shrink-0 gap-1">
                           <button
                             onClick={() => toggleVisited(poi)}
                             title={poi.visitStatus === 'visited' ? 'Mark planned' : 'Mark visited'}
-                            className="rounded-full border border-[color:var(--line)] px-2.5 py-1 text-xs text-[color:var(--ink)] hover:bg-white"
+                            className="rounded-lg border border-[color:var(--line)] px-2.5 py-1 text-xs text-[color:var(--ink)] hover:bg-white/10"
                           >
                             {poi.visitStatus === 'visited' ? '↩' : '✓'}
                           </button>
                           <button
                             onClick={() => removePoi(poi)}
                             title="Remove"
-                            className="rounded-full border border-[color:var(--line)] px-2.5 py-1 text-xs text-[color:var(--ink)] hover:bg-white"
+                            className="rounded-lg border border-[color:var(--line)] px-2.5 py-1 text-xs text-[color:var(--ink)] hover:bg-white/10"
                           >
                             ✕
                           </button>
@@ -545,21 +555,23 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
               )}
             </section>
 
-            <section className="glass rounded-[2rem] px-5 py-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="data-label">Check-ins</div>
-                  <h2 className="mt-1 text-lg font-semibold text-[color:var(--ink)]">{visits.length} logged</h2>
+            <section className="board-card px-5 py-5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Locate size={15} className="text-[color:var(--accent)]" />
+                  <h2 className="text-sm font-semibold text-[color:var(--ink)]">Check-ins</h2>
+                  <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-[color:var(--muted)]">{visits.length}</span>
                 </div>
                 <button
                   onClick={logCurrentLocation}
-                  className="rounded-full bg-[color:var(--accent-2)] px-3 py-2 text-xs font-semibold text-white hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--accent)]/15 px-3 py-1.5 text-xs font-semibold text-[color:var(--accent)] hover:bg-[color:var(--accent)]/25"
                 >
-                  Log current location
+                  <Locate size={13} />
+                  Log location
                 </button>
               </div>
               {visits.length === 0 ? (
-                <p className="mt-3 rounded-[1.4rem] border border-dashed border-[color:var(--line-strong)] px-4 py-8 text-center text-sm text-[color:var(--muted)]">
+                <p className="mt-3 rounded-xl border border-dashed border-[color:var(--line-strong)] px-4 py-8 text-center text-sm text-[color:var(--muted)]">
                   No check-ins yet.
                 </p>
               ) : (
@@ -582,6 +594,10 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
   );
 }
 
+function Dot() {
+  return <span className="h-1 w-1 rounded-full bg-[color:var(--line-strong)]" />;
+}
+
 function TabButton({
   active,
   onClick,
@@ -594,10 +610,10 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`rounded-full px-4 py-2 text-sm font-medium ${
+      className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
         active
-          ? 'bg-[color:var(--ink)] text-[color:var(--paper)]'
-          : 'border border-[color:var(--line)] bg-[color:var(--panel-strong)] text-[color:var(--muted)] hover:bg-white hover:text-[color:var(--ink)]'
+          ? 'bg-[color:var(--ink)] text-black'
+          : 'text-[color:var(--muted)] hover:bg-white/5 hover:text-[color:var(--ink)]'
       }`}
     >
       {children}
@@ -618,24 +634,24 @@ function VisitRow({
   const [note, setNote] = useState(visit.note ?? '');
 
   return (
-    <li className="rounded-[1.4rem] border border-[color:var(--line)] bg-[color:var(--panel-strong)] p-3 text-sm">
+    <li className="rounded-xl border border-[color:var(--line)] bg-[#17171a] p-3 text-sm">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="truncate font-medium text-[color:var(--ink)]">{visit.placeName || 'Visited spot'}</div>
-          <div className="mt-1 text-xs text-[color:var(--muted)]">{new Date(visit.visitedAt).toLocaleString()}</div>
+          <div className="mt-1 text-xs text-[color:var(--faint)]">{new Date(visit.visitedAt).toLocaleString()}</div>
         </div>
         <div className="flex shrink-0 gap-1">
           <button
             onClick={() => setEditing((v) => !v)}
             title="Edit note"
-            className="rounded-full border border-[color:var(--line)] px-2.5 py-1 text-xs text-[color:var(--ink)] hover:bg-white"
+            className="rounded-lg border border-[color:var(--line)] px-2.5 py-1 text-xs text-[color:var(--ink)] hover:bg-white/10"
           >
             ✎
           </button>
           <button
             onClick={onDelete}
             title="Delete check-in"
-            className="rounded-full border border-[color:var(--line)] px-2.5 py-1 text-xs text-[color:var(--ink)] hover:bg-white"
+            className="rounded-lg border border-[color:var(--line)] px-2.5 py-1 text-xs text-[color:var(--ink)] hover:bg-white/10"
           >
             ✕
           </button>
@@ -649,14 +665,14 @@ function VisitRow({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Add a note"
-            className="flex-1 rounded-full border border-[color:var(--line)] bg-white/75 px-3 py-2 text-xs outline-none focus:border-[color:var(--accent)]"
+            className="flex-1 rounded-lg border border-[color:var(--line)] bg-[#1b1b1e] px-3 py-2 text-xs text-[color:var(--ink)] outline-none focus:border-[color:var(--accent)]/50"
           />
           <button
             onClick={() => {
               onSaveNote(note);
               setEditing(false);
             }}
-            className="rounded-full bg-[color:var(--ink)] px-3 py-1.5 text-xs font-medium text-[color:var(--paper)]"
+            className="rounded-lg bg-[color:var(--ink)] px-3 py-1.5 text-xs font-medium text-black"
           >
             Save
           </button>

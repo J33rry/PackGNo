@@ -68,7 +68,7 @@ export function UpiIdCard() {
           setStatus('idle');
         }}
         placeholder="yourname@bank"
-        className="rounded-full border border-[color:var(--line)] bg-white/75 px-4 py-3 text-sm text-[color:var(--ink)] outline-none focus:border-[color:var(--accent)] sm:w-72"
+        className="rounded-full border border-[color:var(--line)] bg-white/5 px-4 py-3 text-sm text-[color:var(--ink)] outline-none focus:border-[color:var(--accent)] sm:w-72"
       />
       <button
         type="submit"

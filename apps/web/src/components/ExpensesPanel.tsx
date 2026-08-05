@@ -139,7 +139,7 @@ export function ExpensesPanel({
   }
 
   return (
-    <div className="grid flex-1 gap-4 px-6 pb-6 lg:grid-cols-[1fr_1fr]">
+    <div className="board-card grid flex-1 gap-4 p-5 sm:p-6 lg:grid-cols-[1fr_1fr]">
       {error && (
         <p className="lg:col-span-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-600 dark:text-red-400">
           {error}

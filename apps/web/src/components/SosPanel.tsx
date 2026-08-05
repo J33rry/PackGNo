@@ -110,10 +110,10 @@ export function SosPanel({
   }, []);
 
   return (
-    <section className="glass rounded-[2rem] px-6 py-6 sm:px-8">
+    <section className="board-card px-6 py-6 sm:px-8">
       <div className="flex flex-col gap-1">
         <div className="data-label text-[color:var(--danger)]">Emergency</div>
-        <h2 className="text-2xl font-semibold text-[color:var(--ink)]">SOS</h2>
+        <h2 className="text-2xl font-bold text-[color:var(--ink)]">SOS</h2>
         <p className="text-sm text-[color:var(--muted)]">
           Calls{' '}
           <span className="font-semibold text-[color:var(--ink)]">{dialNumber}</span> and alerts
@@ -121,7 +121,7 @@ export function SosPanel({
         </p>
       </div>
 
-      <div className="mt-5 rounded-[1.6rem] border border-[color:var(--danger)]/25 bg-[color:var(--paper)] p-4">
+      <div className="mt-5 rounded-2xl border border-[color:var(--danger)]/25 bg-[color:var(--danger)]/5 p-4">
         <label htmlFor="sos-message" className="data-label">
           Optional note
         </label>
@@ -131,7 +131,7 @@ export function SosPanel({
           onChange={(e) => setMessage(e.target.value)}
           maxLength={140}
           placeholder="What's happening? (sent with the alert)"
-          className="mt-2 w-full rounded-full border border-[color:var(--line)] bg-white/75 px-4 py-2.5 text-sm outline-none focus:border-[color:var(--danger)]"
+          className="mt-2 w-full rounded-full border border-[color:var(--line)] bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-[color:var(--danger)]"
         />
 
         {!confirming ? (
@@ -153,7 +153,7 @@ export function SosPanel({
               <button
                 onClick={() => setConfirming(false)}
                 disabled={busy}
-                className="flex-1 rounded-full border border-[color:var(--line-strong)] px-4 py-3 text-sm font-semibold text-[color:var(--ink)] hover:bg-white disabled:opacity-50"
+                className="flex-1 rounded-full border border-[color:var(--line-strong)] px-4 py-3 text-sm font-semibold text-[color:var(--ink)] hover:bg-white/10 disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -209,7 +209,7 @@ export function SosPanel({
                   <button
                     onClick={() => handleResolve(e.$id)}
                     disabled={resolvingId === e.$id}
-                    className="shrink-0 rounded-full bg-[color:var(--accent-2)] px-3 py-2 text-xs font-semibold text-white hover:-translate-y-0.5 disabled:opacity-50"
+                    className="shrink-0 rounded-full bg-[color:var(--accent)]/15 px-3.5 py-2 text-xs font-semibold text-[color:var(--accent)] hover:bg-[color:var(--accent)]/25 disabled:opacity-50"
                   >
                     {resolvingId === e.$id ? '…' : 'Mark safe'}
                   </button>
@@ -227,7 +227,7 @@ export function SosPanel({
             {resolvedEvents.map((e) => (
               <li
                 key={e.$id}
-                className="flex items-center justify-between gap-2 rounded-[1.2rem] border border-[color:var(--line)] bg-[color:var(--panel-strong)] px-3 py-2 text-sm"
+                className="flex items-center justify-between gap-2 rounded-xl border border-[color:var(--line)] bg-[#17171a] px-3 py-2 text-sm"
               >
                 <span className="truncate text-[color:var(--muted)]">
                   {nameOf(e.userId)} — resolved
