@@ -1,58 +1,38 @@
 /**
  * Trip members — the people an expense can be split across.
  *
- * Membership is defined by the trip's Appwrite Team. We read the team's
- * memberships for the roster, then enrich each one with its `profiles` doc so
- * the UI has a display name and (for settle-up) the member's UPI id. The
- * profile lookups run in parallel and degrade gracefully: a member whose
- * profile can't be read still appears, falling back to their team username.
+ * Membership is defined by the trip's Appwrite Team, but the browser's
+ * `teams.listMemberships` redacts other members' userId/userName, so a roster
+ * can't be built client-side. We instead call our own server route, which uses
+ * the admin key to read full membership data (and enrich it with profiles) after
+ * verifying the caller is a member. See `app/api/trips/members`.
  */
 
-import { databases, teams, DB_ID, COLLECTIONS, Query } from './appwrite';
-import type { ProfileDoc } from '@sync/shared';
+import { account } from './appwrite';
 
 export interface TripMemberView {
   userId: string;
   name: string;
   /** Payee VPA for settle-up; null when the member hasn't set one. */
   upiId: string | null;
+  role: 'owner' | 'member';
 }
 
-/**
- * Roster for a trip: one entry per Team membership, ordered by name. Members
- * without a confirmed (joined) membership are skipped so pending invitees don't
- * show up as expense participants.
- */
+/** Roster for a trip's team: one entry per member, ordered by name. */
 export async function listTripMembers(teamId: string): Promise<TripMemberView[]> {
-  const { memberships } = await teams.listMemberships(teamId, [Query.limit(200)]);
+  const { jwt } = await account.createJWT();
 
-  const joined = memberships.filter((m) => m.confirm);
-  const userIds = [...new Set(joined.map((m) => m.userId))];
-
-  const profiles = await fetchProfiles(userIds);
-
-  const members = joined.map<TripMemberView>((m) => {
-    const profile = profiles.get(m.userId);
-    return {
-      userId: m.userId,
-      name: profile?.name || m.userName || 'Traveller',
-      upiId: profile?.upiId ?? null,
-    };
+  const res = await fetch(`/api/trips/members?teamId=${encodeURIComponent(teamId)}`, {
+    headers: { authorization: `Bearer ${jwt}` },
+    cache: 'no-store',
   });
 
-  return members.sort((a, b) => a.name.localeCompare(b.name));
-}
-
-/** Batch-load profiles into a userId → doc map (missing profiles are omitted). */
-async function fetchProfiles(userIds: string[]): Promise<Map<string, ProfileDoc>> {
-  const map = new Map<string, ProfileDoc>();
-  if (userIds.length === 0) return map;
-
-  // profiles are keyed by userId, so one indexed `equal` query fetches them all.
-  const { documents } = await databases.listDocuments<ProfileDoc>(DB_ID, COLLECTIONS.profiles, [
-    Query.equal('userId', userIds),
-    Query.limit(userIds.length),
-  ]);
-  for (const doc of documents) map.set(doc.userId, doc);
-  return map;
+  const data = (await res.json().catch(() => ({}))) as {
+    members?: TripMemberView[];
+    error?: string;
+  };
+  if (!res.ok) {
+    throw new Error(data.error || 'Could not load members.');
+  }
+  return data.members ?? [];
 }

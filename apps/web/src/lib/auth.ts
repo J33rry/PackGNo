@@ -9,7 +9,7 @@
  */
 
 import type { Models } from 'appwrite';
-import { account, databases, DB_ID, COLLECTIONS, ID, OAuthProvider, Permission, Role } from './appwrite';
+import { account, databases, DB_ID, COLLECTIONS, OAuthProvider, Permission, Role } from './appwrite';
 import type { Profile } from '@sync/shared';
 
 export type CurrentUser = Models.User<Models.Preferences>;
@@ -20,11 +20,16 @@ function appUrl(path: string): string {
   return new URL(path, window.location.origin).toString();
 }
 
-/** Start the Google OAuth redirect. The browser navigates away after this. */
-export function loginWithGoogle(): void {
+/**
+ * Start the Google OAuth redirect. The browser navigates away after this.
+ * `redirectPath` is where to land after a successful sign-in (defaults to the
+ * trips list) — used so an invite link can resume joining once the user is in.
+ */
+export function loginWithGoogle(redirectPath?: string): void {
+  const success = redirectPath && redirectPath.startsWith('/') ? redirectPath : '/trips';
   account.createOAuth2Session(
     OAuthProvider.Google,
-    appUrl('/trips'),
+    appUrl(success),
     appUrl('/login?error=oauth'),
   );
 }

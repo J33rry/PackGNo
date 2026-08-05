@@ -189,6 +189,8 @@ export async function reverseGeocode(
   await importGoogleMapsLibrary('geocoding');
   const geocoder = new runtime.maps.Geocoder();
 
+  // Google's GeocoderResult/GeocoderStatus are untyped here (no @types/google.maps).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = await new Promise<any | null>((resolve, reject) => {
     if (signal?.aborted) {
       resolve(null);
@@ -197,6 +199,7 @@ export async function reverseGeocode(
     const abort = () => resolve(null);
     signal?.addEventListener('abort', abort, { once: true });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     geocoder.geocode({ location: { lat, lng } }, (results: any[], status: string) => {
       signal?.removeEventListener('abort', abort);
       if (status === 'OK') {

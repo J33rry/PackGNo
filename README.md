@@ -66,14 +66,22 @@ Remaining before you can sign in and receive pushes end-to-end: enable **Google
 OAuth** in the Appwrite console, and complete the **Firebase/FCM** steps — both
 in [SETUP.md](./SETUP.md).
 
+> **Upgrading an existing project?** The trip-invite feature adds an `inviteCode`
+> attribute + unique index to the `trips` collection. Re-run `pnpm setup:appwrite`
+> (it's idempotent) to provision them, and set `APPWRITE_API_KEY` (scopes:
+> `teams.read`, `teams.write`, `databases.read`) — the server routes use it both
+> to add invitees to a trip's Team and to build the member roster, since the
+> browser can't read other members' identities from a Team.
+
 ## Roadmap
 
 0. ✅ **Scaffold** — monorepo, apps, shared package, Appwrite client wiring.
 1. ✅ **Auth + Trips** — Google OAuth, profile sync, trips backed by Appwrite Teams.
+   ✅ **Invites** (web) — shareable `/join/<code>` link + manual invite-code entry; joining adds the user to the trip's Team via a server route (needs `APPWRITE_API_KEY`).
    ✅ **Push notifications** — FCM via Appwrite Messaging, dispatched by `functions/notify`.
 2. ✅ **Map + POIs** — MapLibre + OpenFreeMap tiles (free, no key) on both platforms, realtime POI updates.
-3. **Expenses + UPI** — expense splitting, balances, UPI settle-up links.
-4. **Voting** — polls with realtime vote counts.
-5. **Live location** — foreground opt-in sharing on the map.
+3. ✅ **Expenses + UPI** (web) — expense splitting, live balances, UPI settle-up links + QR.
+4. ✅ **Voting** (web) — polls with realtime, one-vote-per-member tallies (`tallyPollResults` in `@sync/shared`).
+5. ✅ **Live location** (web) — foreground opt-in sharing, live member pins on the map.
 6. **Offline sync (mobile)** — SQLite cache + mutation outbox.
-7. **SOS** — emergency dial + realtime group alert.
+7. ✅ **SOS** (web) — emergency dial (`tel:`) + realtime group alert with location, resolvable by any member.

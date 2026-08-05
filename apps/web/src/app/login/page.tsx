@@ -18,11 +18,14 @@ function LoginContent() {
   const router = useRouter();
   const params = useSearchParams();
   const oauthError = params.get('error') === 'oauth';
+  // Where to go after sign-in (e.g. resume an invite link). Only same-origin paths.
+  const rawRedirect = params.get('redirect');
+  const redirectPath = rawRedirect && rawRedirect.startsWith('/') ? rawRedirect : '/trips';
 
-  // Already signed in → go straight to trips.
+  // Already signed in → go where they were headed.
   useEffect(() => {
-    if (!loading && user) router.replace('/trips');
-  }, [loading, user, router]);
+    if (!loading && user) router.replace(redirectPath);
+  }, [loading, user, router, redirectPath]);
 
   return (
     <main className="shell flex min-h-screen items-center px-4 py-6 sm:px-6">
@@ -57,7 +60,7 @@ function LoginContent() {
           )}
 
           <button
-            onClick={loginWithGoogle}
+            onClick={() => loginWithGoogle(redirectPath)}
             disabled={loading}
             className="mt-8 flex w-full items-center justify-center gap-3 rounded-full bg-[color:var(--ink)] px-5 py-4 text-sm font-semibold text-[color:var(--paper)] hover:-translate-y-0.5 disabled:opacity-50"
           >

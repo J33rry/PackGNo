@@ -1,31 +1,39 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { createTrip, listMyTrips, type NewTripInput } from '@/lib/trips';
+import { joinTripByCode } from '@/lib/join';
 import { UpiIdCard } from '@/components/UpiIdCard';
-import type { TripDoc } from '@sync/shared';
+import { isValidInviteCode, type TripDoc } from '@sync/shared';
 
 export default function TripsPage() {
+  const router = useRouter();
   const [trips, setTrips] = useState<TripDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [joining, setJoining] = useState(false);
 
-  const load = useCallback(async () => {
-    setError(null);
-    try {
-      setTrips(await listMyTrips());
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Load the trip list on mount. Guarded so a fast unmount can't setState on a
+  // gone component, mirroring the trip-detail page's loader.
   useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+    (async () => {
+      try {
+        const mine = await listMyTrips();
+        if (active) setTrips(mine);
+      } catch (e) {
+        if (active) setError(errorMessage(e));
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function handleCreate(input: NewTripInput) {
     setCreating(true);
@@ -37,6 +45,18 @@ export default function TripsPage() {
       setError(errorMessage(e));
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function handleJoin(code: string) {
+    setJoining(true);
+    setError(null);
+    try {
+      const { tripId } = await joinTripByCode(code);
+      router.push(`/trips/${tripId}`);
+    } catch (e) {
+      setError(errorMessage(e));
+      setJoining(false);
     }
   }
 
@@ -54,7 +74,10 @@ export default function TripsPage() {
               notes organize themselves around the map.
             </p>
           </div>
-          <NewTripForm onCreate={handleCreate} creating={creating} />
+          <div className="flex flex-col gap-3">
+            <NewTripForm onCreate={handleCreate} creating={creating} />
+            <JoinTripForm onJoin={handleJoin} joining={joining} />
+          </div>
         </div>
       </section>
 
@@ -153,6 +176,51 @@ function NewTripForm({
           className="rounded-full bg-[color:var(--ink)] px-4 py-3 text-sm font-semibold text-[color:var(--paper)] hover:-translate-y-0.5 disabled:opacity-50"
         >
           {creating ? 'Creating…' : 'Create trip'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function JoinTripForm({
+  onJoin,
+  joining,
+}: {
+  onJoin: (code: string) => void;
+  joining: boolean;
+}) {
+  const [code, setCode] = useState('');
+  const ready = isValidInviteCode(code);
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!ready) return;
+    onJoin(code.trim());
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="rounded-[1.8rem] border border-[color:var(--line)] bg-[color:var(--panel-strong)] p-5"
+    >
+      <div className="data-label">Join a trip</div>
+      <p className="mt-1 text-xs text-[color:var(--muted)]">
+        Got an invite code or link? Enter the code to hop on.
+      </p>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <input
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          placeholder="Invite code"
+          maxLength={12}
+          className="min-w-0 flex-1 rounded-full border border-[color:var(--line)] bg-white/75 px-4 py-3 font-mono text-sm tracking-[0.25em] text-[color:var(--ink)] outline-none focus:border-[color:var(--accent)]"
+        />
+        <button
+          type="submit"
+          disabled={joining || !ready}
+          className="shrink-0 rounded-full bg-[color:var(--accent-2)] px-5 py-3 text-sm font-semibold text-white hover:-translate-y-0.5 disabled:opacity-50"
+        >
+          {joining ? 'Joining…' : 'Join'}
         </button>
       </div>
     </form>

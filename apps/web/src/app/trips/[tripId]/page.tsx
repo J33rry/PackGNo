@@ -2,11 +2,15 @@
 
 import { use, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { TripMap, type TripMapHandle, type TappedPlace } from '@/components/TripMap';
+import { TripMap, type TripMapHandle, type TappedPlace, type LiveLocation } from '@/components/TripMap';
 import { PlaceSearch } from '@/components/PlaceSearch';
+import { LiveLocationCard } from '@/components/LiveLocationCard';
 import { PlaceInfoCard } from '@/components/PlaceInfoCard';
 import { ExpensesPanel } from '@/components/ExpensesPanel';
 import { ActivitiesPanel, type ActivityPrefill } from '@/components/ActivitiesPanel';
+import { PollsPanel } from '@/components/PollsPanel';
+import { SosPanel } from '@/components/SosPanel';
+import { InviteMembersCard } from '@/components/InviteMembersCard';
 import { useAuth } from '@/components/AuthProvider';
 import { getTrip } from '@/lib/trips';
 import { createPoi, deletePoi, listPois, setPoiVisitStatus, subscribeToPois } from '@/lib/pois';
@@ -17,10 +21,11 @@ import {
   updateVisitNote,
   subscribeToVisits,
 } from '@/lib/visits';
+import { listSosEvents, subscribeToSos } from '@/lib/sos';
 import { reverseGeocode, type Place } from '@/lib/places';
-import { poiCategoryFromTags, type PoiCategory, type PoiDoc, type TripDoc, type VisitDoc } from '@sync/shared';
+import { poiCategoryFromTags, type PoiCategory, type PoiDoc, type SosEventDoc, type TripDoc, type VisitDoc } from '@sync/shared';
 
-type Tab = 'map' | 'activities' | 'expenses';
+type Tab = 'map' | 'activities' | 'expenses' | 'voting' | 'members' | 'sos';
 
 export default function TripDetailPage({ params }: { params: Promise<{ tripId: string }> }) {
   const { tripId } = use(params);
@@ -29,6 +34,8 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
   const [trip, setTrip] = useState<TripDoc | null>(null);
   const [pois, setPois] = useState<PoiDoc[]>([]);
   const [visits, setVisits] = useState<VisitDoc[]>([]);
+  const [sosEvents, setSosEvents] = useState<SosEventDoc[]>([]);
+  const [liveLocations, setLiveLocations] = useState<LiveLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('map');
@@ -47,20 +54,28 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
   // Realtime needs the current lists without re-subscribing on every change.
   const poisRef = useRef<PoiDoc[]>([]);
   const visitsRef = useRef<VisitDoc[]>([]);
+  const sosRef = useRef<SosEventDoc[]>([]);
   useEffect(() => {
     poisRef.current = pois;
     visitsRef.current = visits;
-  }, [pois, visits]);
+    sosRef.current = sosEvents;
+  }, [pois, visits, sosEvents]);
 
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const [t, p, v] = await Promise.all([getTrip(tripId), listPois(tripId), listVisits(tripId)]);
+        const [t, p, v, s] = await Promise.all([
+          getTrip(tripId),
+          listPois(tripId),
+          listVisits(tripId),
+          listSosEvents(tripId),
+        ]);
         if (!active) return;
         setTrip(t);
         setPois(p);
         setVisits(v);
+        setSosEvents(s);
       } catch (e) {
         if (active) setError(messageOf(e));
       } finally {
@@ -72,15 +87,19 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
     };
   }, [tripId]);
 
-  // Live POI + visit updates from other members.
+  // Live POI + visit + SOS updates from other members.
   useEffect(() => {
     const unsubPois = subscribeToPois(tripId, () => poisRef.current, setPois);
     const unsubVisits = subscribeToVisits(tripId, () => visitsRef.current, setVisits);
+    const unsubSos = subscribeToSos(tripId, () => sosRef.current, setSosEvents);
     return () => {
       unsubPois();
       unsubVisits();
+      unsubSos();
     };
   }, [tripId]);
+
+  const activeSosCount = sosEvents.filter((e) => e.status === 'active').length;
 
   /**
    * Show a place in the info card and, when asked, enrich it with a
@@ -334,8 +353,41 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
           <TabButton active={tab === 'expenses'} onClick={() => setTab('expenses')}>
             Expenses
           </TabButton>
+          <TabButton active={tab === 'voting'} onClick={() => setTab('voting')}>
+            Voting
+          </TabButton>
+          <TabButton active={tab === 'members'} onClick={() => setTab('members')}>
+            Members
+          </TabButton>
+          <button
+            onClick={() => setTab('sos')}
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              tab === 'sos'
+                ? 'bg-[color:var(--danger)] text-white'
+                : 'border border-[color:var(--danger)]/40 bg-[color:var(--danger)]/5 text-[color:var(--danger)] hover:bg-[color:var(--danger)]/10'
+            }`}
+          >
+            🚨 SOS
+            {activeSosCount > 0 && (
+              <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-[color:var(--danger)]">
+                {activeSosCount}
+              </span>
+            )}
+          </button>
         </div>
       </section>
+
+      {activeSosCount > 0 && tab !== 'sos' && (
+        <button
+          onClick={() => setTab('sos')}
+          className="flex items-center justify-between gap-3 rounded-[1.4rem] border border-[color:var(--danger)]/40 bg-[color:var(--danger)]/10 px-4 py-3 text-left"
+        >
+          <span className="text-sm font-semibold text-[color:var(--danger)]">
+            🚨 {activeSosCount} active {activeSosCount === 1 ? 'alert' : 'alerts'} — someone on this trip needs help.
+          </span>
+          <span className="shrink-0 text-sm font-semibold text-[color:var(--danger)] underline">View</span>
+        </button>
+      )}
 
       {error && (
         <p className="rounded-[1.4rem] border border-[color:var(--danger)]/20 bg-[color:var(--paper)] px-4 py-3 text-sm text-[color:var(--danger)]">
@@ -363,6 +415,33 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
           <p className="p-6 text-sm text-foreground/60">Loading…</p>
         ))}
 
+      {tab === 'voting' &&
+        (user ? (
+          <PollsPanel tripId={tripId} teamId={trip.teamId} currentUserId={user.$id} />
+        ) : (
+          <p className="p-6 text-sm text-foreground/60">Loading…</p>
+        ))}
+
+      {tab === 'members' &&
+        (user ? (
+          <InviteMembersCard trip={trip} currentUserId={user.$id} />
+        ) : (
+          <p className="p-6 text-sm text-foreground/60">Loading…</p>
+        ))}
+
+      {tab === 'sos' &&
+        (user ? (
+          <SosPanel
+            tripId={tripId}
+            teamId={trip.teamId}
+            currentUserId={user.$id}
+            emergencyNumber={trip.emergencyNumber}
+            events={sosEvents}
+          />
+        ) : (
+          <p className="p-6 text-sm text-foreground/60">Loading…</p>
+        ))}
+
       {tab === 'map' && (
         <div className="workspace-grid flex-1">
           <div className="glass flex flex-col gap-3 rounded-[2rem] p-4 sm:p-5">
@@ -383,6 +462,7 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
                 ref={mapHandle}
                 pois={pois}
                 visits={visits}
+                locations={liveLocations}
                 onMapClick={handleMapClick}
                 onPlaceTap={handlePlaceTap}
                 className="absolute inset-0 h-full w-full"
@@ -408,6 +488,15 @@ export default function TripDetailPage({ params }: { params: Promise<{ tripId: s
           </div>
 
           <aside className="flex flex-col gap-4">
+            {user && (
+              <LiveLocationCard
+                tripId={tripId}
+                teamId={trip.teamId}
+                currentUserId={user.$id}
+                onLocationsChange={setLiveLocations}
+              />
+            )}
+
             <section className="glass rounded-[2rem] px-5 py-5">
               <div className="mb-3 flex items-end justify-between gap-3">
                 <div>

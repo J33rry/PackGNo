@@ -1,3 +1,11 @@
+/*
+ * This module bridges to the Google Maps JS API, a global (`window.google`)
+ * that is loaded at runtime via the official dynamic-import bootstrap. We don't
+ * depend on `@types/google.maps`, so the `google`/`maps` surface is untyped and
+ * accessed through `any` by design — disable the rule for the whole file.
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 const GOOGLE_MAPS_SRC = 'https://maps.googleapis.com/maps/api/js';
 
 export interface GoogleMapsRuntime {
@@ -90,9 +98,11 @@ export function loadGoogleMaps(): Promise<GoogleMapsRuntime> {
   installBootstrap();
 
   // Wait for the `maps` core library to signal that the API is usable.
-  loader = (window as any).google.maps
-    .importLibrary('maps')
-    .then(() => (window as any).google as GoogleMapsRuntime);
+  // `importLibrary` comes off an `any`, so pin the chain to a typed Promise —
+  // otherwise `loader` stays `Promise | null` and can't satisfy the return type.
+  loader = ((window as any).google.maps.importLibrary('maps') as Promise<unknown>).then(
+    () => (window as any).google as GoogleMapsRuntime,
+  );
 
   return loader;
 }

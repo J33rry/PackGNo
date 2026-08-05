@@ -70,6 +70,8 @@ export interface Trip {
   ownerId: string;
   /** Number dialed by the SOS button; falls back to a country default in the UI. */
   emergencyNumber?: string | null;
+  /** Short code that lets others join this trip (via link or manual entry). */
+  inviteCode?: string | null;
   createdAt: string;
 }
 

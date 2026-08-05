@@ -147,9 +147,13 @@ const collections = [
     attributes: [
       S('name', 255, true), S('destination', 255, false), D('startDate', false),
       D('endDate', false), S('coverImageId', 128, false), S('teamId', 64, true),
-      S('ownerId', 64, true), S('emergencyNumber', 32, false), D('createdAt', true),
+      S('ownerId', 64, true), S('emergencyNumber', 32, false), S('inviteCode', 16, false),
+      D('createdAt', true),
     ],
-    indexes: [KEY('teamId_idx', ['teamId']), KEY('ownerId_idx', ['ownerId'])],
+    indexes: [
+      KEY('teamId_idx', ['teamId']), KEY('ownerId_idx', ['ownerId']),
+      UNIQUE('inviteCode_unique', ['inviteCode']),
+    ],
   },
   {
     id: 'trip_members',

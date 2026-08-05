@@ -11,6 +11,11 @@
  * - Reverse geocode is only used after a deliberate tap/click action.
  */
 
+// The Google Maps runtime (Map, AdvancedMarkerElement, InfoWindow) is loaded at
+// runtime and untyped here — we don't depend on `@types/google.maps` — so the
+// refs holding those instances are `any` by design.
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { DEFAULT_MAP_CAMERA, type PoiDoc, type VisitDoc } from '@sync/shared';
 import { getPlaceById, type ViewBox } from '@/lib/places';
@@ -33,6 +38,18 @@ export interface TappedPlace {
   placeId?: string | null;
 }
 
+/** A member's live position rendered on the map. */
+export interface LiveLocation {
+  userId: string;
+  name: string;
+  lat: number;
+  lng: number;
+  /** ISO timestamp of the fix — used for the tooltip. */
+  timestamp: string;
+  /** True for the current user's own marker (styled distinctly). */
+  isSelf: boolean;
+}
+
 export interface TripMapHandle {
   flyTo: (lat: number, lng: number, zoom?: number) => void;
   getViewBox: () => ViewBox | undefined;
@@ -42,6 +59,8 @@ interface TripMapProps {
   pois: PoiDoc[];
   /** Check-ins to render as a distinct marker layer. */
   visits?: VisitDoc[];
+  /** Live member positions to render as a distinct marker layer. */
+  locations?: LiveLocation[];
   /** Fired when the user clicks empty map space — used to add a POI there. */
   onMapClick?: (coords: { lat: number; lng: number }) => void;
   /** Fired when the user taps a labeled place rendered in the tiles. */
@@ -82,14 +101,55 @@ function createCirclePin(opts: {
   return wrapper;
 }
 
+/** Stable-ish colour per user so a member keeps the same live-marker hue. */
+function colorForUser(userId: string): string {
+  const palette = ['#0d8abc', '#1c9b6f', '#c8862a', '#8b5cf6', '#e0567a', '#3b82f6', '#0f766e'];
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
+  return palette[hash % palette.length]!;
+}
+
+/** Up-to-two-letter initials from a display name. */
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+}
+
+/**
+ * A circular avatar-style pin (initials on a coloured disc) for a live member
+ * position. `self` gets a heavier ring so you can spot your own dot at a glance.
+ */
+function createPersonPin(name: string, color: string, self: boolean): HTMLElement {
+  const el = document.createElement('div');
+  el.style.cssText = [
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'width:30px',
+    'height:30px',
+    'border-radius:9999px',
+    `background:${color}`,
+    'color:#fff',
+    'font:700 11px/1 sans-serif',
+    `border:${self ? '3px solid #17324d' : '2px solid #f7f3ea'}`,
+    'box-shadow:0 2px 8px rgba(19,33,44,0.35)',
+    'cursor:pointer',
+  ].join(';');
+  el.textContent = initialsOf(name);
+  return el;
+}
+
 export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
-  { pois, visits = [], onMapClick, onPlaceTap, onPoiClick, className },
+  { pois, visits = [], locations = [], onMapClick, onPlaceTap, onPoiClick, className },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any | null>(null);
   const markersRef = useRef<Map<string, any>>(new Map());
   const visitMarkersRef = useRef<Map<string, any>>(new Map());
+  const locationMarkersRef = useRef<Map<string, any>>(new Map());
   const hasFitRef = useRef(false);
   const infoWindowRef = useRef<any | null>(null);
   const markerClassRef = useRef<any>(null);
@@ -124,6 +184,7 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
 
     const markers = markersRef.current;
     const visitMarkers = visitMarkersRef.current;
+    const locationMarkers = locationMarkersRef.current;
     let cancelled = false;
 
     let building = false;
@@ -204,6 +265,8 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
       markers.clear();
       visitMarkers.forEach((m) => (m.map = null));
       visitMarkers.clear();
+      locationMarkers.forEach((m) => (m.map = null));
+      locationMarkers.clear();
       infoWindowRef.current?.close();
       infoWindowRef.current = null;
       mapRef.current = null;
@@ -318,6 +381,43 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
       }
     }
   }, [visits, mapReady]);
+
+  // ── Live location markers ────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    const AME = markerClassRef.current;
+    if (!map || !AME) return;
+
+    const markers = locationMarkersRef.current;
+    const seen = new Set<string>();
+
+    for (const loc of locations) {
+      seen.add(loc.userId);
+      const title = `${loc.name}${loc.isSelf ? ' (you)' : ''} · ${new Date(loc.timestamp).toLocaleTimeString()}`;
+      const existing = markers.get(loc.userId);
+      if (existing) {
+        existing.position = { lat: loc.lat, lng: loc.lng };
+        existing.title = title;
+        continue;
+      }
+
+      const marker = new AME({
+        map,
+        position: { lat: loc.lat, lng: loc.lng },
+        title,
+        content: createPersonPin(loc.name, colorForUser(loc.userId), loc.isSelf),
+        zIndex: loc.isSelf ? 1000 : 900, // keep people above place pins
+      });
+      markers.set(loc.userId, marker);
+    }
+
+    for (const [id, marker] of markers) {
+      if (!seen.has(id)) {
+        marker.map = null;
+        markers.delete(id);
+      }
+    }
+  }, [locations, mapReady]);
 
   return (
     <div className={className}>
